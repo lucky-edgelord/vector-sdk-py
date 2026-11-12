@@ -530,9 +530,17 @@ class Client:
         token = token or None
         if token and len(token.split()) >= 12 and mnemonic is None:
             token, mnemonic = None, token
+        global _ACTIVE_CLIENT
+        if _ACTIVE_CLIENT is not None and _ACTIVE_CLIENT is not self and not _ACTIVE_CLIENT._closed:
+            raise ClientException(
+                "only one Vector bot can run per process (vector_core keeps process-global state); "
+                "run each bot in its own process"
+            )
+        _ACTIVE_CLIENT = self
         try:
             native = await native_mod.NativeBot.build(nsec=token, mnemonic=mnemonic, **self._options)
         except native_mod.VectorException as e:
+            _ACTIVE_CLIENT = None
             raise LoginFailure(str(e)) from e
         state = self._connection
         state.native = native
@@ -612,6 +620,9 @@ class Client:
                 pass
         if self._ready is not None:
             self._ready.clear()
+        global _ACTIVE_CLIENT
+        if _ACTIVE_CLIENT is self:
+            _ACTIVE_CLIENT = None
 
     def clear(self) -> None:
         self._closed = False
@@ -663,6 +674,9 @@ async def _drain_native() -> None:
         if not pending:
             return
         await asyncio.sleep(0.05)
+
+
+_ACTIVE_CLIENT: Optional["Client"] = None
 
 
 def _has_loop() -> bool:

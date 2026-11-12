@@ -278,7 +278,9 @@ class ConnectionState:
 
     async def parse_ready(self, ev: Dict[str, Any]) -> None:
         ids = []
-        for c in ev.get("communities") or []:
+        listed = ev.get("communities")
+        # the native event carries a *count*; older shapes carried a list of ids/dicts
+        for c in (listed if isinstance(listed, (list, tuple)) else []):
             ids.append(c if isinstance(c, str) else c.get("community_id") or c.get("id"))
         try:
             ids = list(dict.fromkeys(ids + list(await self.native.communities())))
@@ -394,8 +396,16 @@ class ConnectionState:
             self.client.dispatch("message_delete", cached)
         self._views.pop(mid, None)
 
+    async def _community_for_event(self, community_id: str) -> Community:
+        """The cached Community, loading it (and firing ``on_guild_join``) the first time it shows up,
+        e.g. when an invite is auto-accepted by ``invite_policy="public"``."""
+        c = self._communities.get(community_id)
+        if c is None:
+            c = await self.add_community(community_id, joined=True)
+        return c
+
     async def parse_member_join(self, ev: Dict[str, Any]) -> None:
-        c = self._community_shell(ev["community_id"])
+        c = await self._community_for_event(ev["community_id"])
         npub = ev.get("npub", "")
         await self.ensure_profile(npub)
         member = c._member(npub)
@@ -425,7 +435,7 @@ class ConnectionState:
         self.client.dispatch("typing", channel, user, payload.timestamp)
 
     async def parse_community_change(self, ev: Dict[str, Any]) -> None:
-        c = self._community_shell(ev["community_id"])
+        c = await self._community_for_event(ev["community_id"])
         change = ev.get("change") or {}
         kind = change.get("change", "")
         before = copy.copy(c)

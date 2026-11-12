@@ -4,16 +4,22 @@ Vector has no embed objects, but it renders nearly all of markdown, coloured tex
 (``<color #hex>…</color>``) and Discord-style ``<t:UNIX:R>`` timestamps, so an embed becomes a
 well-formatted message:
 
-    ▍ Author name                      (author line, linked if author.url)
-    ▍ **[Title](url)**                 (title in the embed colour)
-    ▍ Description …
-    ▍
-    ▍ **Field** │ **Inline field**
-    ▍ value     │ value
-    ▍
-    ▍ -# footer • <t:…:f>
+    ---                                (rule opening the embed)
+    -# Author name                     (small line, linked if author.url)
+    ### Title                          (heading in the embed colour, linked without a preview card)
+    Description …
 
-The ``▍`` bar takes the embed colour, like Discord's side stripe. Images set to
+    | FIELD | INLINE FIELD |           (inline fields become one Vector table card)
+    |---|---|
+    | value | value |
+
+    **Wide field**
+    text
+
+    ---
+    -# footer • <t:…:f>      (small, under a divider)
+
+Images set to
 ``attachment://name.png`` are sent as real attachments alongside; URL images are placed on their
 own line so Vector shows a link preview.
 """
@@ -27,7 +33,6 @@ from .colour import Colour
 
 __all__ = ("Embed", "EmbedField")
 
-_BAR = "▍"
 
 
 class _Proxy:
@@ -273,23 +278,25 @@ class Embed:
         def paint(text: str) -> str:
             return f"<color {hexcol}>{text}</color>" if hexcol else text
 
-        bar = paint(_BAR) + " "
+        def link(text: str, url: Optional[str]) -> str:
+            # [text](<url>) is a link Vector will not unfurl into a big preview card
+            return f"[{text}](<{url}>)" if url else text
+
+        def cell(text: str) -> str:
+            return str(text).replace("|", "\\|").replace("\n", "<br>")
+
         lines: List[str] = []
 
         if self._author:
-            name = self._author["name"]
-            if self._author.get("url"):
-                name = f"[{name}]({self._author['url']})"
-            lines.append(f"**{name}**")
+            lines.append("-# " + link(self._author["name"], self._author.get("url")))
 
         if self.title:
-            title = f"[{self.title}]({self.url})" if self.url else self.title
-            lines.append(f"### {paint(f'**{title}**')}" if hexcol else f"### **{title}**")
+            lines.append("### " + paint(f"**{link(self.title, self.url)}**"))
 
         if self.description:
             lines.extend(self.description.split("\n"))
 
-        # fields: consecutive inline fields share a row, like Discord's 3-column grid
+        # fields: consecutive inline fields share a row (max 3), like Discord's grid
         rows: List[List[Dict[str, Any]]] = []
         for f in self._fields:
             if f.get("inline") and rows and rows[-1] and rows[-1][-1].get("inline") and len(rows[-1]) < 3:
@@ -303,8 +310,9 @@ class Embed:
                 lines.append(f"**{row[0]['name']}**")
                 lines.extend(row[0]["value"].split("\n"))
             else:
-                lines.append(" │ ".join(f"**{f['name']}**" for f in row))
-                lines.append(" │ ".join(f["value"].replace("\n", " ") for f in row))
+                lines.append("| " + " | ".join(cell(f["name"]) for f in row) + " |")
+                lines.append("|" + "---|" * len(row))
+                lines.append("| " + " | ".join(cell(f["value"]) for f in row) + " |")
 
         for layer in (self._thumbnail, self._image):
             url = layer.get("url")
@@ -318,12 +326,14 @@ class Embed:
         if self.timestamp is not None:
             footer_bits.append(f"<t:{int(self.timestamp.timestamp())}:f>")
         if footer_bits:
-            lines.append("")
+            # Vector folds a `-#` line into the paragraph above it; a divider keeps the footer on its own line
+            lines.append("---")
             lines.append("-# " + " • ".join(footer_bits))
 
         if not lines:
             return ""
-        return "\n".join(bar + line if line else bar.rstrip() for line in lines)
+        # a rule above and below boxes the embed in without a side line
+        return "\n".join(["---"] + lines)
 
     def __str__(self) -> str:
         return self.to_markdown()

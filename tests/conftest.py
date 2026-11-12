@@ -220,7 +220,7 @@ class Harness:
         await c._on_native_ready()
         await c.setup_hook()
         self.task = asyncio.ensure_future(c.connect())
-        await self.emit({"type": "ready", "communities": [COMMUNITY]})
+        await self.emit({"type": "ready", "communities": 1})
         await asyncio.wait_for(c.wait_until_ready(), 5)
 
     async def emit(self, ev: Dict[str, Any], settle: float = 0.05) -> None:

@@ -154,8 +154,10 @@ Set a prefix like `"!"` to also accept text commands, or keep the default `"/"` 
 `vector.Embed` has discord.py's full API (`add_field`, `set_author`, `set_footer`, `set_image`, `to_dict`/`from_dict`…)
 and is rendered into Vector's markdown:
 
-* `colour` paints the title and a `▍` bar down the left edge (Vector supports coloured text, and bots get it automatically)
-* inline fields sit side by side (`**CPU** │ **RAM**`)
+* `colour` paints the title (Vector supports coloured text, and bots get it automatically). There is no side line.
+* the title is a real heading; with `url=` it links without Vector unfurling a large preview card
+* inline fields (up to 3 per row) become one Vector table card with an accent header row
+* the footer sits on its own small line under a divider
 * `timestamp` uses `<t:…:f>`, shown in each reader's own timezone
 * `set_image(url="attachment://chart.png")` together with `file=vector.File("chart.png")` sends the image as a real attachment with the embed as its caption
 * URL images are placed on their own line so Vector shows a link preview
