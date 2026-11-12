@@ -328,12 +328,14 @@ def _build_xdc(panel: Panel, title: str) -> str:
 async def _handle_session(session: "XdcSession") -> None:
     state = session._state
     panel: Optional[Panel] = state._panels.get(session.app.message_id)
+    _log.debug("panel session for %s: %s (known: %s)", session.app.message_id, panel, list(state._panels))
     if panel is None:
         return  # a panel from before this bot restarted: the app still shows its baked-in first render
     panel.sessions.add(session)
     try:
         await session.send_json({"t": "render", "spec": panel.spec()})
         async for ev in session:
+            _log.debug("panel event %r", ev)
             await panel._on_event(session, ev)
     finally:
         panel.sessions.discard(session)
