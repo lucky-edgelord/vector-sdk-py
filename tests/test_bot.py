@@ -249,7 +249,7 @@ async def test_views_buttons_and_selects(harness_factory):
     await asyncio.sleep(0.1)
     msg = view_holder["m"]
     sent = h.native.sent[-1]["text"]
-    assert "Sure?" in sent and "✅ <color #57f287>**Yes**</color>" in sent and "🇦 **No**" in sent
+    assert "Sure?" in sent and "Yes" not in sent and "🇦 No" in sent
     assert "1️⃣ Red" in sent and "2️⃣ Blue" in sent
     assert [e for (m, e) in h.native.reactions if m == msg.id] == ["✅", "🇦", "1️⃣", "2️⃣"]
 
@@ -401,3 +401,21 @@ async def test_compat_runs_unmodified_discord_code(tmp_path):
     '''))
     r = subprocess.run([sys.executable, "-m", "vector.compat", str(bot)], capture_output=True, text=True, timeout=60)
     assert "OK vector True True" in r.stdout, r.stderr
+
+
+async def test_embed_image_sits_above_footer_and_buttons_on_last(harness_factory):
+    import datetime as _dt
+
+    class V(ui.View):
+        @ui.button(label="A")
+        async def a(self, i, b): pass
+
+    client = vector.Client()
+    h = await harness_factory(client)
+    ch = client.get_channel(GENERAL)
+    e = vector.Embed(title="T", description="body", timestamp=_dt.datetime(2026, 1, 1, tzinfo=_dt.timezone.utc))
+    e.set_image(url="attachment://pic.png"); e.set_footer(text="foot")
+    msg = await ch.send(embed=e, file=vector.File(__import__("io").BytesIO(b"x"), filename="pic.png"), view=V())
+    first, second = h.native.sent[-2], h.native.sent[-1]
+    assert first["file"] == "pic.png" and "foot" not in first["text"] and "> body" in first["text"]
+    assert second["text"].startswith("> -# foot") and msg.id == second["id"]

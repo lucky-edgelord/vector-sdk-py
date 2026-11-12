@@ -55,6 +55,9 @@ class _Proxy:
         return isinstance(other, _Proxy) and self.__dict__ == other.__dict__
 
 
+VECTOR_ACCENT = "#59fcb3"
+
+
 class EmbedField(_Proxy):
     name: str
     value: str
@@ -271,9 +274,17 @@ class Embed:
                 names.append(url[len("attachment://"):])
         return names
 
-    def to_markdown(self) -> str:
-        """The embed as Vector markdown (what :meth:`Messageable.send` actually posts)."""
-        hexcol = f"#{self.colour.value:06x}" if self.colour is not None else None
+    def image_urls(self) -> List[str]:
+        """Web URLs of this embed's image and thumbnail (``attachment://`` ones are not included)."""
+        return [u for u in (self._image.get("url"), self._thumbnail.get("url")) if u and not u.startswith("attachment://")]
+
+    def to_markdown(self, *, part: str = "all", images: bool = True) -> str:
+        """The embed as Vector markdown (what :meth:`Messageable.send` actually posts).
+
+        ``part``: ``"all"``, ``"body"`` (everything above the footer) or ``"footer"`` (the footer quote only), so a
+        message can put an attached image between them. ``images=False`` leaves out image URLs."""
+        # always Vector's own mint, whatever colour the bot set, so embeds match the app
+        hexcol = VECTOR_ACCENT
 
         def paint(text: str) -> str:
             return f"<color {hexcol}>{text}</color>" if hexcol else text
@@ -314,26 +325,31 @@ class Embed:
                 lines.append("|" + "---|" * len(row))
                 lines.append("| " + " | ".join(cell(f["value"]) for f in row) + " |")
 
-        for layer in (self._thumbnail, self._image):
-            url = layer.get("url")
-            if url and not url.startswith("attachment://"):
-                lines.append("")
-                lines.append(url)
+        # an image can't live inside the quote (Vector has no inline images): a plain URL is left outside it, where
+        # Vector unfurls it into a picture card; ``attachment://`` files are sent as real attachments by ``send``
+        outside: List[str] = []
+        if images:
+            outside.extend(self.image_urls())
 
         footer_bits = []
         if self._footer.get("text"):
             footer_bits.append(self._footer["text"])
         if self.timestamp is not None:
             footer_bits.append(f"<t:{int(self.timestamp.timestamp())}:f>")
-        if footer_bits:
-            # Vector folds a `-#` line into the paragraph above it; a divider keeps the footer on its own line
-            lines.append("---")
-            lines.append("-# " + " • ".join(footer_bits))
 
-        if not lines:
-            return ""
-        # a rule above and below boxes the embed in without a side line
-        return "\n".join(["---"] + lines)
+        def quote(ls: List[str]) -> str:
+            # a blockquote gives the solid accent bar down the left edge; blank lines stay inside it
+            return "\n".join(("> " + l) if l else ">" for l in ls)
+
+        # layout: the embed body in a quote, then the image, then the footer + timestamp in a quote of its own
+        blocks: List[str] = []
+        if part in ("all", "body"):
+            if lines:
+                blocks.append(quote(lines))
+            blocks.extend(outside)
+        if footer_bits and part in ("all", "footer"):
+            blocks.append(quote(["-# " + " • ".join(footer_bits)]))
+        return "\n\n".join(blocks)
 
     def __str__(self) -> str:
         return self.to_markdown()

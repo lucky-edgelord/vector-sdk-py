@@ -154,18 +154,19 @@ Set a prefix like `"!"` to also accept text commands, or keep the default `"/"` 
 `vector.Embed` has discord.py's full API (`add_field`, `set_author`, `set_footer`, `set_image`, `to_dict`/`from_dict`…)
 and is rendered into Vector's markdown:
 
-* `colour` paints the title (Vector supports coloured text, and bots get it automatically). There is no side line.
+* the body sits in a blockquote, so it gets Vector's solid accent bar down the left
+* colours are always Vector's own (mint title); the embed's `colour` is ignored so embeds match the app
 * the title is a real heading; with `url=` it links without Vector unfurling a large preview card
-* inline fields (up to 3 per row) become one Vector table card with an accent header row
-* the footer sits on its own small line under a divider
-* `timestamp` uses `<t:…:f>`, shown in each reader's own timezone
-* `set_image(url="attachment://chart.png")` together with `file=vector.File("chart.png")` sends the image as a real attachment with the embed as its caption
-* URL images are placed on their own line so Vector shows a link preview
+* inline fields (up to 3 per row) become one Vector table card inside the quote
+* `set_image(url="attachment://chart.png")` with `file=vector.File("chart.png")` sends the image as a real attachment
+  right under the body; web image URLs are downloaded and attached the same way (falling back to the link)
+* the footer and `timestamp` (`<t:…:f>`, each reader's own timezone) go in a small quote of their own, after the
+  image. With an image the footer is a second message, which is the one `send` returns and the view's reactions go on
 
 ## Views, buttons, selects, modals
 
 Vector has no message components, so `vector.ui` builds them from reactions. Each button or option becomes an
-emoji reaction the bot adds under the message, with a legend in the message text. Reacting clicks it, and removing
+emoji reaction the bot adds under the message. Buttons with their own emoji show only the reaction; buttons without one get a letter (🇦 🇧 …) and a short label line. Reacting clicks it, and removing
 your reaction clicks it again.
 
 ```python

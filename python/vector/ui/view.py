@@ -122,16 +122,14 @@ class Button(Item):
         return [self.emoji]
 
     def _legend(self) -> str:
-        label = self.label or ""
+        # buttons are just their reaction emoji; only a link button needs text (its URL)
         if self.url:
-            text = f"🔗 [{label or self.url}]({self.url})"
-            return text
-        body = f"**{label}**" if label else ""
-        colour = _STYLE_COLOUR.get(self.style)
-        if colour and body and not self.disabled:
-            body = f"<color {colour}>{body}</color>"
-        text = f"{self.emoji} {body}".strip()
-        return f"~~{text}~~" if self.disabled else text
+            return f"🔗 [{self.label or self.url}](<{self.url}>)"
+        if getattr(self, "_auto_emoji", False) and self.label:
+            # no emoji of its own: a letter reaction needs its label beside it, in plain text
+            text = f"{self.emoji} {self.label}"
+            return f"~~{text}~~" if self.disabled else text
+        return ""
 
     def __repr__(self) -> str:
         return f"<Button label={self.label!r} emoji={self.emoji!r} style={self.style}>"
@@ -298,6 +296,7 @@ class View:
         for c in self._children:
             if isinstance(c, Button) and not c.emoji and not c.url:
                 c.emoji = next(letters)
+                c._auto_emoji = True
 
     @property
     def children(self) -> List[Item]:

@@ -14,12 +14,12 @@ def test_embed_renders_vector_markdown():
     e.set_footer(text="vector")
     e.set_image(url="attachment://chart.png")
     md = e.to_markdown()
-    assert "### <color #5865f2>**[Stats](<https://example.com>)**</color>" in md   # no unfurl, real heading
+    assert "### <color #59fcb3>**[Stats](<https://example.com>)**</color>" in md   # no unfurl, real heading
     assert "▍" not in md                                                          # no side line by default
-    assert "| CPU | RAM |\n|---|---|\n| 12% | 1 GB |" in md                        # inline fields -> table card
-    assert "**Notes**\nnone" in md
-    assert "---\n-# vector • <t:1767225600:f>" in md                              # footer on its own line
-    assert md.startswith("---\n-# Kit")
+    assert "> | CPU | RAM |\n> |---|---|\n> | 12% | 1 GB |" in md                        # inline fields -> table card
+    assert "> **Notes**\n> none" in md
+    assert "\n\n> -# vector • <t:1767225600:f>" in md                              # footer on its own line
+    assert md.startswith("> -# Kit") and all(l.startswith(">") for l in md.split("\n") if l)
     assert e.attachment_names() == ["chart.png"]
     assert vector.Embed.from_dict(e.to_dict()) == e
 

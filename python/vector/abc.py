@@ -119,18 +119,33 @@ class Messageable:
         if file is not None:
             all_files.insert(0, file)
 
-        parts: List[str] = []
-        if content is not None:
-            parts.append(str(content))
-        for e in all_embeds:
-            md = e.to_markdown()
-            if md:
-                parts.append(md)
-        if view is not None:
-            legend = view._legend()
-            if legend:
-                parts.append(legend)
-        text = "\n\n".join(p for p in parts if p)
+        # embed images given as web URLs are downloaded and sent as attachments (Vector shows no inline images)
+        keep_urls = True
+        fetched = await _fetch_images(all_embeds)
+        if fetched:
+            all_files.extend(fetched)
+            keep_urls = False
+
+        def build(part: str) -> str:
+            out: List[str] = []
+            if part != "footer" and content is not None:
+                out.append(str(content))
+            for e in all_embeds:
+                md = e.to_markdown(part=part, images=keep_urls)
+                if md:
+                    out.append(md)
+            if part != "body" and view is not None:
+                legend = view._legend()
+                if legend:
+                    out.append(legend)
+            return "\n\n".join(p for p in out if p)
+
+        # with an attached image the footer goes in a second message, so the image sits above it
+        wanted_names = {n for e in all_embeds for n in e.attachment_names()} | {f.filename for f in fetched}
+        split = bool(all_files) and any(f.filename in wanted_names for f in all_files) and \
+            any(e.to_markdown(part="footer") for e in all_embeds)
+        text = build("body") if split else build("all")
+        footer_text = build("footer") if split else ""
 
         reply_to = _reference_id(reference)
         expiry = expires_in if expires_in is not None else delete_after
@@ -163,6 +178,13 @@ class Messageable:
                                                    expires_in=expiry_s, to_bot=to_bot)
 
         message = await state.sent_message(message_id, channel_id, kind, text, reply_to)
+        if footer_text:
+            first = message
+            message_id = await native.channel_send(channel_id, kind, footer_text, reply_to=None,
+                                                   expires_in=expiry_s, to_bot=to_bot)
+            message = await state.sent_message(message_id, channel_id, kind, footer_text, None)
+            if delete_after is not None:
+                asyncio.ensure_future(first.delete(delay=delete_after))
         if view is not None:
             await view._start(message)
         if delete_after is not None:
@@ -282,3 +304,41 @@ class PrivateChannel:
 
     __slots__ = ()
 
+
+
+async def _fetch_images(embeds: List[Any]) -> List[Any]:
+    """Download http(s) embed images (max 8 MB each) so they can go out as real attachments. Failures are skipped
+    and the embed falls back to showing the link."""
+    import io
+    import os
+    import urllib.request
+    from urllib.parse import urlparse
+
+    from .file import File
+
+    urls: List[str] = []
+    for e in embeds:
+        for u in e.image_urls():
+            if u.startswith(("http://", "https://")) and u not in urls:
+                urls.append(u)
+    if not urls:
+        return []
+
+    def get(u: str) -> Optional[bytes]:
+        try:
+            req = urllib.request.Request(u, headers={"User-Agent": "vector-sdk-py"})
+            with urllib.request.urlopen(req, timeout=10) as r:
+                data = r.read(8 * 1024 * 1024 + 1)
+            return data if 0 < len(data) <= 8 * 1024 * 1024 else None
+        except Exception:
+            return None
+
+    loop = asyncio.get_running_loop()
+    out: List[Any] = []
+    for u in urls:
+        data = await loop.run_in_executor(None, get, u)
+        if data is None:
+            return []  # keep it simple: if any image fails, every image stays a link
+        name = os.path.basename(urlparse(u).path) or "image.png"
+        out.append(File(io.BytesIO(data), filename=name))
+    return out
