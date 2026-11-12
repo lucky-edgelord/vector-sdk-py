@@ -105,7 +105,6 @@ class ConnectionState:
         self._last_message: Dict[str, Message] = {}
         self.voice_clients: Dict[str, Any] = {}
         self._views: Dict[str, Any] = {}
-        self._panels: Dict[str, Any] = {}
         self._voice_snapshot: Dict[str, Dict[str, Dict[str, Any]]] = {}
         self._profile_tasks: Dict[str, asyncio.Task] = {}
         self._ready_once = False

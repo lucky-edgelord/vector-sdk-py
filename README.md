@@ -249,33 +249,6 @@ discord.py-style API built on top.
 MIT. `vector_sdk` is MIT-licensed by the Vector team.
 
 
-## Two UI modes
-
-The default **embed mode** sends embeds as Vector markdown with reaction buttons, so ported bots work as-is. **Mini App mode** (below) is an opt-in alternative with real buttons, selects and modals. Pick per bot (`ui_mode=`), per view or per send.
-
-## Mini App UI mode (webxdc)
-
-Besides text embeds with reaction buttons, any message with an embed or a `View` can be shipped as a **Mini App panel**:
-real buttons, selects and modals rendered in a webxdc app. Clicks are verified by the SDK, so `interaction.user` is trustworthy.
-
-```python
-bot = commands.Bot(command_prefix="!", ui_mode="xdc", ui_theme="vector")   # every embed/view becomes a panel
-await ctx.send(embed=e, view=MyView(), xdc="midnight")                      # or per message
-await ctx.send(embed=e, view=MyView(), xdc=False)                           # opt out
-class MyView(ui.View): xdc = "discord"                                      # or per view
-```
-
-Themes: `vector` (default: black with Vector's mint accent), `vector-light`, `discord`, `discord-light`, `midnight`, `paper`, `contrast`.
-The panel is a form-style layout (embed with colour bar, fields, buttons, selects, modals), no chat frame. Images need `attachment://` files; they are bundled into the app. Make your own:
-
-```python
-from vector.ui import register_theme, themes
-register_theme(themes.DISCORD.extend("brand", vars={"--accent": "#e91e63"}, css=".btn{border-radius:99px}"))
-```
-
-Ephemeral responses become private toasts; `edit_message` redraws the panel; `view.stop()` greys it out.
-
-
 ## Porting an existing discord.py bot
 
 No edits needed: run it through the compat runner and `import discord` resolves to this library.
@@ -290,14 +263,6 @@ not the API: IDs are strings (use TEXT columns, not INTEGER), and there are no g
 
 ## Known issues and workarounds
 
-- **Mini App mode is not verified end to end.** Panels render and the bot sees the session open, but in our live test (bot
-  running in a sandbox that only allows outbound HTTPS through a proxy) the app never got a reply and its buttons did
-  nothing; the SDK's own Counter example behaved the same, so it's likely the network, not this library. Mini Apps
-  need Vector's realtime channel to reach the bot directly.
-  **Workaround:** use the default embed mode (text embeds with reaction buttons), which works everywhere. If you want
-  Mini App panels, run the bot on a normal machine or server and check with a one-button panel first:
-  `await channel.send(embed=e, view=V(), xdc=True)`. Set `logging.getLogger("vector.ui.xdc").setLevel("DEBUG")` to see
-  whether the app's `hello` and clicks arrive.
 - **One bot per process.** The Rust SDK is process-global; a second `Client` raises `ClientException`. Run extra bots in
   separate processes.
 - **IDs are strings** (64-hex ids and npubs). Ported bots that store them in INTEGER database columns need TEXT columns.

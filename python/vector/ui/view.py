@@ -289,10 +289,6 @@ class View:
         self._stopped: Optional[asyncio.Future] = None
         self._timeout_task: Optional[asyncio.Task] = None
         self._deadline: Optional[float] = None
-        self._xdc_panel: Any = None
-
-    #: ``True`` shows this view as a Mini App panel instead of reaction buttons (see :mod:`vector.ui.xdc_ui`)
-    xdc: ClassVar[bool] = False
 
     # -- children --------------------------------------------------------------------------
 
@@ -384,16 +380,7 @@ class View:
             _log.exception("on_timeout failed", exc_info=e)
         self._finish()
 
-    def _close_panel(self) -> None:
-        panel = self._xdc_panel
-        if panel is not None:
-            try:
-                asyncio.ensure_future(panel.close())
-            except RuntimeError:
-                pass
-
     def _finish(self) -> None:
-        self._close_panel()
         if self.message is not None:
             self.message._state._views.pop(self.message.id, None)
         if self._stopped is not None and not self._stopped.done():
@@ -430,7 +417,6 @@ class View:
         _log.error("Ignoring exception in view %r for item %r", self, item, exc_info=error)
 
     def stop(self) -> None:
-        self._close_panel()
         self._deadline = None
         if self._timeout_task is not None:
             self._timeout_task.cancel()

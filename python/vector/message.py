@@ -229,13 +229,6 @@ class PartialMessage:
 
     async def edit(self, content: Optional[Any] = MISSING, *, embed: Optional["Embed"] = MISSING,
                    embeds: List["Embed"] = MISSING, view: Any = MISSING, **ignored: Any) -> "Message":
-        panel = self._state._panels.get(self.id)
-        if panel is not None:  # a Mini App panel: redraw it instead of editing chat text
-            new_embeds: Any = MISSING
-            if embed is not MISSING or embeds is not MISSING:
-                new_embeds = ([embed] if embed not in (MISSING, None) else []) + list(embeds if embeds not in (MISSING, None) else [])
-            await panel.update(content=content, embeds=new_embeds, view=view)
-            return panel.message  # type: ignore[return-value]
         cid, kind = await self._target()
         parts = []
         if content is not MISSING and content is not None:
