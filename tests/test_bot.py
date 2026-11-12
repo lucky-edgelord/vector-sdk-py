@@ -533,3 +533,25 @@ async def test_ui_modes_and_themes(harness_factory):
     assert '"name": "paper"' in page
     with pytest.raises(ValueError):
         vector.Client(ui_mode="hologram")
+
+
+async def test_compat_runs_unmodified_discord_code(tmp_path):
+    import subprocess, sys, textwrap
+    bot = tmp_path / "bot.py"
+    bot.write_text(textwrap.dedent('''
+        import discord
+        from discord.ext import commands, tasks
+        from discord import ui
+        intents = discord.Intents.default(); intents.message_content = True
+        bot = commands.Bot(command_prefix="!", intents=intents)
+        class Cog(commands.Cog):
+            @commands.command()
+            async def hi(self, ctx): await ctx.send(embed=discord.Embed(title="x"))
+        bot.add_cog(Cog(bot))
+        class V(discord.ui.View):
+            @discord.ui.button(label="a", style=discord.ButtonStyle.primary)
+            async def a(self, i, b): pass
+        print("OK", discord.__name__, isinstance(bot, discord.Client), "hi" in bot.all_commands)
+    '''))
+    r = subprocess.run([sys.executable, "-m", "vector.compat", str(bot)], capture_output=True, text=True, timeout=60)
+    assert "OK vector True True" in r.stdout, r.stderr

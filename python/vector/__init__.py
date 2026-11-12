@@ -54,7 +54,8 @@ from .message import (
 from .permissions import PermissionOverwrite, Permissions
 from .role import Role
 from .state import CommunityChange, XdcPresence
-from .ui import Interaction
+from .message import Emoji, PartialEmoji
+from .ui import ButtonStyle, Interaction, InteractionResponse, InteractionType, SelectOption, TextStyle
 from .user import BaseUser, ClientUser, Member, Profile, User
 from .voice import (
     AudioSource, FFmpegOpusAudio, FFmpegPCMAudio, PCMAudio, PCMVolumeTransformer, Speech, Transcriber, Utterances,

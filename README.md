@@ -249,6 +249,10 @@ discord.py-style API built on top.
 MIT. `vector_sdk` is MIT-licensed by the Vector team.
 
 
+## Two UI modes
+
+The default **embed mode** sends embeds as Vector markdown with reaction buttons, so ported bots work as-is. **Mini App mode** (below) is an opt-in alternative with real buttons, selects and modals. Pick per bot (`ui_mode=`), per view or per send.
+
 ## Mini App UI mode (webxdc)
 
 Besides text embeds with reaction buttons, any message with an embed or a `View` can be shipped as a **Mini App panel**:
@@ -270,3 +274,16 @@ register_theme(themes.DISCORD.extend("brand", vars={"--accent": "#e91e63"}, css=
 ```
 
 Ephemeral responses become private toasts; `edit_message` redraws the panel; `view.stop()` greys it out.
+
+
+## Porting an existing discord.py bot
+
+No edits needed: run it through the compat runner and `import discord` resolves to this library.
+
+```sh
+pip install vector-sdk-py
+vector-run bot.py            # same as: python -m vector.compat bot.py
+```
+
+Or put `import vector.compat; vector.compat.install()` before your imports. Differences that remain are about Vector,
+not the API: IDs are strings (use TEXT columns, not INTEGER), and there are no guilds-intents or presence features.

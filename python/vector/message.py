@@ -538,3 +538,19 @@ class RawMemberRemoveEvent(_Raw):
         self.guild_id = guild_id
         self.community_id = guild_id
         self.channel_id = channel_id
+
+
+class PartialEmoji(str):
+    """A unicode emoji, discord.py-style (``str(emoji)`` is the character). Vector has no custom emoji."""
+
+    def __new__(cls, *, name: str = "", id: Any = None, animated: bool = False):
+        obj = super().__new__(cls, name)
+        obj.name, obj.id, obj.animated = name, id, animated
+        return obj
+
+    @classmethod
+    def from_str(cls, value: str) -> "PartialEmoji":
+        return cls(name=value)
+
+
+Emoji = PartialEmoji
