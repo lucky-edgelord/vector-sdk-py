@@ -266,3 +266,8 @@ def loop(*, seconds: float = MISSING, minutes: float = MISSING, hours: float = M
                     reconnect=reconnect, name=name)
 
     return decorator
+
+# placeholders for discord.py names (see vector._stubs)
+from ..._stubs import fill as _fill_stubs  # noqa: E402
+
+_fill_stubs(globals(), "tasks")

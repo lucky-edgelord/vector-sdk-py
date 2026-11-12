@@ -16,3 +16,8 @@ __all__ = (
     "MentionableSelect", "button", "select", "Modal", "TextInput", "TextStyle", "Interaction", "InteractionResponse",
     "InteractionType", "Followup", "Paginator", "LETTER_EMOJI", "NUMBER_EMOJI",
 )
+
+# placeholders for discord.py names Vector has no equivalent for (see vector._stubs)
+from .._stubs import fill as _fill_stubs  # noqa: E402
+
+_fill_stubs(globals(), "ui")

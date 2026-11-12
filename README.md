@@ -276,5 +276,7 @@ not the API: IDs are strings (use TEXT columns, not INTEGER), and there are no g
 - **One bot per process.** The Rust SDK is process-global; a second `Client` raises `ClientException`. Run extra bots in
   separate processes.
 - **IDs are strings** (64-hex ids and npubs). Ported bots that store them in INTEGER database columns need TEXT columns.
-- **Some `discord` names are missing** (`Webhook`, `Thread`, `StageChannel`, `MessageType`, `MemberFlags`,
-  `VerificationLevel`); imports of them from a ported bot will fail until they're stubbed.
+- **Discord-only features are stubs.** Every public `discord.py` class (`Thread`, `Webhook`, `StageChannel`, `Poll`,
+  `MessageType`, `MemberFlags`, `VerificationLevel`, Components V2 like `ui.Container`, `commands.FlagConverter`, and
+  so on) imports, subclasses and type-checks, so a ported bot starts. *Using* one (instantiating a `Webhook`, a flag
+  converter, …) raises `vector.NotSupportedOnVector` with a clear message. Stubs have `__vector_stub__ = True`.

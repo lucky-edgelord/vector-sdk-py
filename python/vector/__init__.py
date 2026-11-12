@@ -73,3 +73,8 @@ except ImportError:  # pragma: no cover
 def generate_nsec() -> str:
     """Mint a fresh bot secret key (``nsec1…``)."""
     return Client.generate_nsec()
+
+# placeholders for discord.py names Vector has no equivalent for (see vector._stubs)
+from ._stubs import NotSupportedOnVector, fill as _fill_stubs  # noqa: E402
+
+_fill_stubs(globals(), "main")

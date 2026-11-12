@@ -146,3 +146,8 @@ def oauth_url(*args: Any, **kwargs: Any) -> str:
 
 def _shorten(npub: str) -> str:
     return npub[:12] + "…" if len(npub) > 16 else npub
+
+# placeholders for discord.py names Vector has no equivalent for (see vector._stubs)
+from ._stubs import fill as _fill_stubs  # noqa: E402
+
+_fill_stubs(globals(), "utils")

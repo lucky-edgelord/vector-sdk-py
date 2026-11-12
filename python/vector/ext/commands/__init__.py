@@ -22,3 +22,8 @@ from .help import DefaultHelpCommand, EmbedHelpCommand, HelpCommand, MinimalHelp
 
 HybridCommand = Command
 HybridGroup = Group
+
+# placeholders for discord.py names Vector has no equivalent for (see vector._stubs)
+from ..._stubs import fill as _fill_stubs  # noqa: E402
+
+_fill_stubs(globals(), "commands")

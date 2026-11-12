@@ -1,5 +1,7 @@
 import datetime
 
+import pytest
+
 import vector
 from vector.ext.commands.core import StringView
 
@@ -58,3 +60,25 @@ def test_utils_get_find():
     assert vector.utils.get(items, name="b").n == 2
     assert vector.utils.find(lambda o: o.n == 1, items).name == "a"
     assert vector.utils.format_dt(datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc), "R") == "<t:1767225600:R>"
+
+
+DISCORD_PY_NAMES = ['ActionRow', 'Activity', 'ActivityType', 'AllowedMentions', 'AppCommandContext', 'AppCommandOptionType', 'AppCommandPermissionType', 'AppCommandType', 'AppInfo', 'AppInstallParams', 'AppInstallationType', 'ApplicationFlags', 'Asset', 'Attachment', 'AttachmentFlags', 'AudioSource', 'AuditLogAction', 'AuditLogActionCategory', 'AuditLogChanges', 'AuditLogDiff', 'AuditLogEntry', 'AutoModAction', 'AutoModPresets', 'AutoModRule', 'AutoModRuleAction', 'AutoModRuleActionType', 'AutoModRuleEventType', 'AutoModRuleTriggerType', 'AutoModTrigger', 'AutoShardedClient', 'BanEntry', 'BaseActivity', 'BaseSoundboardSound', 'BotIntegration', 'Button', 'ButtonStyle', 'CallMessage', 'CategoryChannel', 'ChannelFlags', 'ChannelType', 'CheckboxComponent', 'CheckboxGroupComponent', 'CheckboxGroupOption', 'Client', 'ClientException', 'ClientStatus', 'ClientUser', 'Collectible', 'CollectibleType', 'Color', 'Colour', 'Component', 'ComponentType', 'ConnectionClosed', 'Container', 'ContentFilter', 'CustomActivity', 'DMChannel', 'DefaultAvatar', 'DeletedReferencedMessage', 'DiscordException', 'DiscordServerError', 'Embed', 'EmbedFlags', 'Emoji', 'Entitlement', 'EntitlementOwnerType', 'EntitlementType', 'EntityType', 'EventStatus', 'ExpireBehavior', 'ExpireBehaviour', 'FFmpegAudio', 'FFmpegOpusAudio', 'FFmpegPCMAudio', 'FFmpegProcessError', 'File', 'FileComponent', 'FileUploadComponent', 'Forbidden', 'ForumChannel', 'ForumLayoutType', 'ForumOrderType', 'ForumTag', 'Game', 'GatewayNotFound', 'GroupChannel', 'Guild', 'GuildPreview', 'GuildProductPurchase', 'GuildSticker', 'HTTPException', 'Integration', 'IntegrationAccount', 'IntegrationApplication', 'IntegrationTypeConfig', 'Intents', 'Interaction', 'InteractionCallbackActivityInstance', 'InteractionCallbackResponse', 'InteractionMessage', 'InteractionResponded', 'InteractionResponse', 'InteractionResponseType', 'InteractionType', 'InvalidData', 'Invite', 'InviteFlags', 'InviteTarget', 'InviteType', 'LabelComponent', 'Locale', 'LoginFailure', 'MFALevel', 'MediaGalleryComponent', 'MediaGalleryItem', 'MediaItemLoadingState', 'Member', 'MemberCacheFlags', 'MemberFlags', 'Message', 'MessageApplication', 'MessageFlags', 'MessageInteraction', 'MessageInteractionMetadata', 'MessageReference', 'MessageReferenceType', 'MessageSnapshot', 'MessageType', 'MissingApplicationID', 'NSFWLevel', 'NameplatePalette', 'NotFound', 'NotificationLevel', 'Object', 'Onboarding', 'OnboardingMode', 'OnboardingPrompt', 'OnboardingPromptOption', 'OnboardingPromptType', 'PCMAudio', 'PCMVolumeTransformer', 'PartialAppInfo', 'PartialEmoji', 'PartialIntegration', 'PartialInviteChannel', 'PartialInviteGuild', 'PartialMessage', 'PartialMessageable', 'PartialWebhookChannel', 'PartialWebhookGuild', 'PermissionOverwrite', 'Permissions', 'Poll', 'PollAnswer', 'PollLayoutType', 'PollMedia', 'PrimaryGuild', 'PrivacyLevel', 'PrivilegedIntentsRequired', 'PublicUserFlags', 'PurchaseNotification', 'RadioGroupComponent', 'RadioGroupOption', 'RateLimited', 'RawAppCommandPermissionsUpdateEvent', 'RawBulkMessageDeleteEvent', 'RawIntegrationDeleteEvent', 'RawMemberRemoveEvent', 'RawMessageDeleteEvent', 'RawMessageUpdateEvent', 'RawPollVoteActionEvent', 'RawPresenceUpdateEvent', 'RawReactionActionEvent', 'RawReactionClearEmojiEvent', 'RawReactionClearEvent', 'RawThreadDeleteEvent', 'RawThreadMembersUpdate', 'RawThreadUpdateEvent', 'RawTypingEvent', 'Reaction', 'ReactionType', 'Role', 'RoleFlags', 'RoleSubscriptionInfo', 'RoleTags', 'SKU', 'SKUFlags', 'SKUType', 'ScheduledEvent', 'SectionComponent', 'SelectDefaultValue', 'SelectDefaultValueType', 'SelectMenu', 'SelectOption', 'SeparatorComponent', 'SeparatorSpacing', 'SessionStartLimits', 'ShardInfo', 'SoundboardDefaultSound', 'SoundboardSound', 'SpeakingState', 'Spotify', 'StageChannel', 'StageInstance', 'StandardSticker', 'Status', 'StatusDisplayType', 'Sticker', 'StickerFormatType', 'StickerItem', 'StickerPack', 'StickerType', 'StreamIntegration', 'Streaming', 'Subscription', 'SubscriptionStatus', 'SyncWebhook', 'SyncWebhookMessage', 'SystemChannelFlags', 'Team', 'TeamMember', 'TeamMemberRole', 'TeamMembershipState', 'Template', 'TextChannel', 'TextDisplay', 'TextInput', 'TextStyle', 'Thread', 'ThreadMember', 'ThumbnailComponent', 'UnfurledMediaItem', 'User', 'UserFlags', 'VerificationLevel', 'VideoQualityMode', 'VoiceChannel', 'VoiceChannelEffect', 'VoiceChannelEffectAnimationType', 'VoiceChannelSoundEffect', 'VoiceClient', 'VoiceProtocol', 'VoiceState', 'Webhook', 'WebhookMessage', 'WebhookType', 'WelcomeChannel', 'WelcomeScreen', 'Widget', 'WidgetChannel', 'WidgetMember']
+
+
+def test_every_discord_py_top_level_class_imports():
+    missing = [n for n in DISCORD_PY_NAMES if not hasattr(vector, n)]
+    assert not missing, missing
+
+
+def test_stubs_import_subclass_and_fail_clearly():
+    from vector import MemberFlags, MessageType, NotSupportedOnVector, Thread, Webhook
+
+    class MyThread(Thread):
+        pass
+
+    assert not isinstance(object(), Thread) and MessageType.default is MessageType.default
+    assert MemberFlags().bot_http_interactions is False
+    with pytest.raises(NotSupportedOnVector):
+        Webhook()
+    from vector.ext import commands, tasks
+    assert commands.FlagConverter and commands.BadFlagArgument and tasks.ExponentialBackoff
