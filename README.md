@@ -287,3 +287,19 @@ vector-run bot.py            # same as: python -m vector.compat bot.py
 
 Or put `import vector.compat; vector.compat.install()` before your imports. Differences that remain are about Vector,
 not the API: IDs are strings (use TEXT columns, not INTEGER), and there are no guilds-intents or presence features.
+
+## Known issues and workarounds
+
+- **Mini App mode is not verified end to end.** Panels render and the bot sees the session open, but in our live test (bot
+  running in a sandbox that only allows outbound HTTPS through a proxy) the app never got a reply and its buttons did
+  nothing; the SDK's own Counter example behaved the same, so it's likely the network, not this library. Mini Apps
+  need Vector's realtime channel to reach the bot directly.
+  **Workaround:** use the default embed mode (text embeds with reaction buttons), which works everywhere. If you want
+  Mini App panels, run the bot on a normal machine or server and check with a one-button panel first:
+  `await channel.send(embed=e, view=V(), xdc=True)`. Set `logging.getLogger("vector.ui.xdc").setLevel("DEBUG")` to see
+  whether the app's `hello` and clicks arrive.
+- **One bot per process.** The Rust SDK is process-global; a second `Client` raises `ClientException`. Run extra bots in
+  separate processes.
+- **IDs are strings** (64-hex ids and npubs). Ported bots that store them in INTEGER database columns need TEXT columns.
+- **Some `discord` names are missing** (`Webhook`, `Thread`, `StageChannel`, `MessageType`, `MemberFlags`,
+  `VerificationLevel`); imports of them from a ported bot will fail until they're stubbed.
