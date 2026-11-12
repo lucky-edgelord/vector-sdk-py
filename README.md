@@ -255,14 +255,14 @@ Besides text embeds with reaction buttons, any message with an embed or a `View`
 real buttons, selects and modals rendered in a webxdc app. Clicks are verified by the SDK, so `interaction.user` is trustworthy.
 
 ```python
-bot = commands.Bot(command_prefix="!", ui_mode="xdc", ui_theme="discord")   # every embed/view becomes a panel
+bot = commands.Bot(command_prefix="!", ui_mode="xdc", ui_theme="vector")   # every embed/view becomes a panel
 await ctx.send(embed=e, view=MyView(), xdc="midnight")                      # or per message
 await ctx.send(embed=e, view=MyView(), xdc=False)                           # opt out
 class MyView(ui.View): xdc = "discord"                                      # or per view
 ```
 
-Themes: `vector`, `discord`, `discord_light`, `midnight`, `paper`, `contrast`. `layout="discord"` reproduces the Discord
-message frame, embed border, buttons, selects and modals. Make your own:
+Themes: `vector` (default: black with Vector's mint accent), `vector-light`, `discord`, `discord-light`, `midnight`, `paper`, `contrast`.
+The panel is a form-style layout (embed with colour bar, fields, buttons, selects, modals), no chat frame. Images need `attachment://` files; they are bundled into the app. Make your own:
 
 ```python
 from vector.ui import register_theme, themes

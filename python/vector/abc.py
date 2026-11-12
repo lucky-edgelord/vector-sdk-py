@@ -110,7 +110,7 @@ class Messageable:
         * ``to_bot``: address a specific bot's command (an npub).
         * ``xdc=True``: show the content, embeds and ``view`` as a Mini App panel (real buttons, drop-downs,
           form pop-ups and an embed card) instead of text and reactions. Pass a theme to style it:
-          ``xdc="discord"`` for Discord's look, or a :class:`vector.ui.Theme`. ``False`` forces plain text;
+          ``xdc="discord"`` for Discord colours, or a :class:`vector.ui.Theme`. ``False`` forces plain text;
           ``None`` follows ``view.xdc`` and the client's ``ui_mode``.
         """
         state = self._state

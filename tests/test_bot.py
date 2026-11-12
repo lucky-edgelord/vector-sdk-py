@@ -457,7 +457,7 @@ async def test_xdc_panel_roundtrip(harness_factory):
     assert 'id = "vector-ui"' in files["manifest.toml"].decode() and "Lunch?" in files["manifest.toml"].decode()
     page = files["index.html"].decode()
     spec = json.loads(page.split('id="spec">')[1].split("</script>")[0])
-    assert spec["theme"]["layout"] == "discord" and spec["embeds"][0]["title"] == "Lunch?"
+    assert spec["theme"]["layout"] == "panel" and spec["embeds"][0]["title"] == "Lunch?"
     assert [c["label"] for c in spec["rows"][0] if c["type"] == "button"] == ["Yes", "Ask"]
     assert spec["rows"][1][0]["type"] == "select"
     assert view._xdc_panel is not None and msg.id in client._connection._panels
@@ -503,7 +503,7 @@ async def test_xdc_panel_roundtrip(harness_factory):
 async def test_ui_modes_and_themes(harness_factory):
     from vector.ui import Theme, get_theme, register_theme
 
-    assert get_theme("discord").layout == "discord" and get_theme("Midnight").dark is True
+    assert get_theme("discord").layout == "panel" and get_theme("Midnight").dark is True
     brand = register_theme(ui.themes.DISCORD.extend("brand", vars={"--accent": "#e91e63"}, css=".btn{x:y}"))
     assert get_theme("brand").vars["--accent"] == "#e91e63" and ".btn{x:y}" in brand.css
     with pytest.raises(ValueError):

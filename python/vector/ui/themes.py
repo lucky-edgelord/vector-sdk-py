@@ -1,9 +1,9 @@
 """Themes for Mini App panels (``xdc=True``).
 
-A theme is a set of CSS variables, optional extra CSS, and a layout (``"card"``, Vector's own look, or
-``"discord"``, a Discord-style message frame with a coloured embed bar and Discord's button and menu looks)::
+A theme is a set of CSS variables, optional extra CSS, and a layout (``"panel"``: a form-like panel with a coloured embed bar, Discord-style buttons, selects and modals, but no chat
+frame; or ``"card"``: a plainer card look)::
 
-    await ctx.send(embed=e, view=v, xdc="discord")                 # a built-in theme, by name
+    await ctx.send(embed=e, view=v, xdc="midnight")                 # a built-in theme, by name
     await ctx.send(embed=e, view=v, xdc=vector.ui.themes.MIDNIGHT)
 
     brand = vector.ui.Theme("brand", vars={"--accent": "#ff6b6b", "--radius": "4px"},
@@ -18,17 +18,18 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional, Union
 
-__all__ = ("Theme", "register_theme", "get_theme", "THEMES", "VECTOR", "DISCORD", "DISCORD_LIGHT", "MIDNIGHT",
+__all__ = ("Theme", "register_theme", "get_theme", "THEMES", "VECTOR", "VECTOR_LIGHT", "DISCORD", "DISCORD_LIGHT", "MIDNIGHT",
            "PAPER", "CONTRAST")
 
 
 class Theme:
     """CSS variables + extra CSS + a layout. ``css`` is applied after the built-in styles, so it wins."""
 
-    def __init__(self, name: str, *, vars: Optional[Dict[str, str]] = None, css: str = "", layout: str = "card",
+    def __init__(self, name: str, *, vars: Optional[Dict[str, str]] = None, css: str = "", layout: str = "panel",
                  dark: Optional[bool] = None):
-        if layout not in ("card", "discord"):
-            raise ValueError("layout must be 'card' or 'discord'")
+        layout = "panel" if layout == "discord" else layout  # old name
+        if layout not in ("card", "panel"):
+            raise ValueError("layout must be 'card' or 'panel'")
         self.name = name
         self.vars: Dict[str, str] = dict(vars or {})
         self.css = css
@@ -37,7 +38,7 @@ class Theme:
 
     def extend(self, name: Optional[str] = None, *, vars: Optional[Dict[str, str]] = None, css: str = "",
                layout: Optional[str] = None) -> "Theme":
-        """A copy with changes: ``vector.ui.themes.DISCORD.extend("mine", vars={"--accent": "#e91e63"})``."""
+        """A copy with changes: ``vector.ui.themes.VECTOR.extend("mine", vars={"--accent": "#e91e63"})``."""
         merged = dict(self.vars)
         merged.update(vars or {})
         return Theme(name or self.name, vars=merged, css=(self.css + "\n" + css).strip(), layout=layout or self.layout,
@@ -53,15 +54,24 @@ class Theme:
         return f"<Theme {self.name!r} layout={self.layout!r}>"
 
 
-# Vector's own look: follows the phone's light/dark setting.
-VECTOR = Theme("vector")
+# Vector's own look: black, mint accent (matches the app).
+VECTOR = Theme("vector", dark=True, vars={
+    "--bg": "#000000", "--card": "#111111", "--line": "#262626", "--text": "#f2f2f2", "--muted": "#8c8c8c",
+    "--accent": "#59fcb3", "--accent-text": "#03261a", "--success": "#1f9d6a", "--danger": "#e5484d",
+    "--link": "#59fcb3", "--radius": "12px", "--btn": "#242424", "--btn-text": "#f2f2f2"})
 
+VECTOR_LIGHT = Theme("vector-light", dark=False, vars={
+    "--bg": "#ffffff", "--card": "#f4f6f5", "--line": "#dfe4e2", "--text": "#101312", "--muted": "#667085",
+    "--accent": "#0fb37a", "--accent-text": "#ffffff", "--success": "#12865b", "--link": "#0b8a5f",
+    "--radius": "12px", "--btn": "#e4e8e6", "--btn-text": "#101312"})
+
+# Discord's colours, for bots ported from Discord that want that look (same panel layout, no chat frame).
 _DISCORD_DARK = {"--bg": "#313338", "--card": "#2b2d31", "--line": "#1e1f22", "--text": "#dbdee1", "--muted": "#949ba4",
                  "--accent": "#5865f2", "--accent-text": "#ffffff", "--danger": "#da373c", "--success": "#248046",
-                 "--link": "#00a8fc", "--radius": "4px"}
-DISCORD = Theme("discord", layout="discord", dark=True, vars=_DISCORD_DARK)
+                 "--link": "#00a8fc", "--radius": "4px", "--btn": "#4e5058", "--btn-text": "#fff"}
+DISCORD = Theme("discord", dark=True, vars=_DISCORD_DARK)
 
-DISCORD_LIGHT = Theme("discord-light", layout="discord", dark=False, vars={
+DISCORD_LIGHT = Theme("discord-light", dark=False, vars={
     "--bg": "#ffffff", "--card": "#f2f3f5", "--line": "#e3e5e8", "--text": "#313338", "--muted": "#5c5e66",
     "--accent": "#5865f2", "--accent-text": "#ffffff", "--danger": "#da373c", "--success": "#248046",
     "--link": "#006ce7", "--radius": "4px"})
@@ -79,7 +89,7 @@ CONTRAST = Theme("high-contrast", dark=True, vars={
     "--accent": "#ffd60a", "--accent-text": "#000000", "--danger": "#ff453a", "--success": "#30d158",
     "--link": "#64d2ff", "--radius": "2px"}, css=".embed,.btn,select,.chip{border-width:2px}")
 
-THEMES: Dict[str, Theme] = {t.name: t for t in (VECTOR, DISCORD, DISCORD_LIGHT, MIDNIGHT, PAPER, CONTRAST)}
+THEMES: Dict[str, Theme] = {t.name: t for t in (VECTOR, VECTOR_LIGHT, DISCORD, DISCORD_LIGHT, MIDNIGHT, PAPER, CONTRAST)}
 
 
 def register_theme(theme: Theme) -> Theme:
