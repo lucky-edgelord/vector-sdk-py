@@ -307,7 +307,8 @@ async def test_send_with_embed_file_and_delete_after(harness_factory):
     e = vector.Embed(title="Chart", colour=0x00FF00).set_image(url="attachment://chart.png")
     await channel.send("Here:", embed=e, file=vector.File(b"\x89PNG....", filename="chart.png"))
     last = h.native.sent[-1]
-    assert last["file"] == "chart.png" and "Here:" in last["text"] and "**Chart**" in last["text"]
+    prev = h.native.sent[-2]
+    assert last["file"] == "chart.png" and last["text"] is None and "Here:" in prev["text"] and "**Chart**" in prev["text"]
 
     msg = await channel.send("temp", delete_after=0.05)
     assert h.native.sent[-1]["expires_in"] == 1
@@ -416,6 +417,6 @@ async def test_embed_image_sits_above_footer_and_buttons_on_last(harness_factory
     e = vector.Embed(title="T", description="body", timestamp=_dt.datetime(2026, 1, 1, tzinfo=_dt.timezone.utc))
     e.set_image(url="attachment://pic.png"); e.set_footer(text="foot")
     msg = await ch.send(embed=e, file=vector.File(__import__("io").BytesIO(b"x"), filename="pic.png"), view=V())
-    first, second = h.native.sent[-2], h.native.sent[-1]
-    assert first["file"] == "pic.png" and "foot" not in first["text"] and "> body" in first["text"]
+    body, pic, second = h.native.sent[-3], h.native.sent[-2], h.native.sent[-1]
+    assert "foot" not in body["text"] and "> body" in body["text"] and pic["file"] == "pic.png" and pic["text"] is None
     assert second["text"].startswith("> -# foot") and msg.id == second["id"]

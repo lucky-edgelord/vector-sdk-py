@@ -167,7 +167,8 @@ The embed above is built from a normal `vector.Embed`. A text-only embed looks l
 * `set_image(url="attachment://chart.png")` with `file=vector.File("chart.png")` sends the image as a real attachment
   right under the body; web image URLs are downloaded and attached the same way (falling back to the link)
 * the footer and `timestamp` (`<t:…:f>`, each reader's own timezone) go in a small quote of their own, after the
-  image. With an image the footer is a second message, which is the one `send` returns and the view's reactions go on
+  image. With an image an embed goes out as separate messages (body, image, footer) rather than using an attachment
+  caption, which Vector can drop when a chat reloads. `send` returns the last one, which is where a view's reactions go
 
 ## Views, buttons, selects, modals
 

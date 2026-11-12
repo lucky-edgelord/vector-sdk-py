@@ -162,17 +162,26 @@ class Messageable:
 
         if all_files:
             message_id = None
+            # captions don't survive Vector reloading a chat (the text under an attachment can vanish), so with
+            # an embed the text goes out as its own message and the image(s) follow without a caption
+            own_text = bool(all_embeds) and bool(text)
+            if own_text:
+                message_id = await native.channel_send(channel_id, kind, text, reply_to=reply_to,
+                                                       expires_in=expiry_s, to_bot=to_bot)
+                reply_to_files = None
+            else:
+                reply_to_files = reply_to
             for i, f in enumerate(all_files):
-                caption = text if (i == 0 and text) else None
+                caption = text if (i == 0 and text and not own_text) else None
                 if f.path is not None:
                     mid = await native.channel_send_file(channel_id, kind, f.path, caption=caption,
-                                                         reply_to=reply_to if i == 0 else None,
+                                                         reply_to=reply_to_files if i == 0 else None,
                                                          expires_in=expiry_s, compress=f.compress)
                 else:
                     mid = await native.channel_send_bytes(channel_id, kind, f.read(), f.filename, caption=caption,
-                                                          reply_to=reply_to if i == 0 else None,
+                                                          reply_to=reply_to_files if i == 0 else None,
                                                           expires_in=expiry_s, compress=f.compress)
-                message_id = message_id or mid
+                message_id = mid if own_text else (message_id or mid)
         else:
             message_id = await native.channel_send(channel_id, kind, text, reply_to=reply_to,
                                                    expires_in=expiry_s, to_bot=to_bot)
