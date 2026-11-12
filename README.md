@@ -154,6 +154,12 @@ Set a prefix like `"!"` to also accept text commands, or keep the default `"/"` 
 `vector.Embed` has discord.py's full API (`add_field`, `set_author`, `set_footer`, `set_image`, `to_dict`/`from_dict`…)
 and is rendered into Vector's markdown:
 
+![An embed with fields and an attached image](docs/images/embed-with-image.png)
+
+The embed above is built from a normal `vector.Embed`. A text-only embed looks like this:
+
+![A text-only embed](docs/images/embed-quote.png)
+
 * the body sits in a blockquote, so it gets Vector's solid accent bar down the left
 * colours are always Vector's own (mint title); the embed's `colour` is ignored so embeds match the app
 * the title is a real heading; with `url=` it links without Vector unfurling a large preview card
@@ -164,6 +170,8 @@ and is rendered into Vector's markdown:
   image. With an image the footer is a second message, which is the one `send` returns and the view's reactions go on
 
 ## Views, buttons, selects, modals
+
+![Buttons shown as reactions under a message](docs/images/reaction-buttons.png)
 
 Vector has no message components, so `vector.ui` builds them from reactions. Each button or option becomes an
 emoji reaction the bot adds under the message. Buttons with their own emoji show only the reaction; buttons without one get a letter (🇦 🇧 …) and a short label line. Reacting clicks it, and removing
