@@ -71,6 +71,9 @@ class Client:
     * ``catch_up``: ``"inline"`` (default) or ``"external"``.
     * ``clearnet`` / ``tor`` / ``i2p``: transport (Tor and I2P need a build with those features).
     * ``max_messages``: message cache size for ``on_message_delete``/``on_message_edit``.
+    * ``ui_mode``: ``"embed"`` (default: text embeds and reaction buttons) or ``"xdc"`` (every embed and view
+      becomes a Mini App panel; ``send(xdc=False)`` opts one out). ``ui_theme``: the panels' theme (see
+      :mod:`vector.ui.themes`).
 
     ``intents`` and other discord.py-only options are accepted and ignored.
     """
@@ -93,9 +96,15 @@ class Client:
         max_messages: Optional[int] = 1000,
         activity: Optional[Activity] = None,
         status: Any = None,
+        ui_mode: str = "embed",
+        ui_theme: Any = "vector",
         loop: Optional[asyncio.AbstractEventLoop] = None,
         **options: Any,
     ):
+        if ui_mode not in ("embed", "xdc"):
+            raise ValueError("ui_mode must be 'embed' (text embeds + reaction buttons) or 'xdc' (Mini App panels)")
+        self._ui_mode = ui_mode      # how embeds and views are drawn unless a send says otherwise
+        self._ui_theme = ui_theme    # the theme for Mini App panels
         self.intents = intents or Intents.default()
         self._options = dict(
             data_dir=data_dir, invite_policy=invite_policy, whitelist=list(whitelist) if whitelist else None,

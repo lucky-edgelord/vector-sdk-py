@@ -60,6 +60,38 @@ class _DefaultRepr:
 _default: Any = _DefaultRepr()
 
 
+
+class _Done:
+    """An already-finished awaitable: ``await`` gives the result straight back."""
+
+    __slots__ = ("value",)
+
+    def __init__(self, value: Any = None):
+        self.value = value
+
+    def __await__(self):
+        if False:  # pragma: no cover - makes this a generator
+            yield
+        return self.value
+
+
+def _dual(coro: Any) -> Any:
+    """Run ``coro`` now. With no event loop yet (a 1.x-style script setting up before ``run()``) it runs to
+    completion and raises on failure; inside a loop it starts at once and the result can be awaited."""
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        scratch = asyncio.new_event_loop()
+        try:
+            return _Done(scratch.run_until_complete(coro))
+        finally:
+            scratch.close()
+    try:
+        return asyncio.Task(coro, loop=loop, eager_start=True)  # Python 3.12+: runs synchronously until it must wait
+    except TypeError:
+        return asyncio.ensure_future(coro, loop=loop)
+
+
 class BotBase(GroupMixin):
     def __init__(self, command_prefix: Any = "/", *, help_command: Optional[HelpCommand] = _default,
                  description: Optional[str] = None, owner_id: Optional[str] = None,
@@ -218,7 +250,7 @@ class BotBase(GroupMixin):
 
     # -- cogs -----------------------------------------------------------------------------
 
-    async def add_cog(self, cog: Cog, /, *, override: bool = False, guild: Any = MISSING, guilds: Any = MISSING) -> None:
+    async def _add_cog(self, cog: Cog, /, *, override: bool = False, guild: Any = MISSING, guilds: Any = MISSING) -> None:
         if not isinstance(cog, Cog):
             raise TypeError("cogs must derive from Cog")
         cog_name = cog.__cog_name__
@@ -228,14 +260,14 @@ class BotBase(GroupMixin):
                 from ...errors import ClientException
 
                 raise ClientException(f"Cog named {cog_name!r} already loaded")
-            await self.remove_cog(cog_name)
+            await self._remove_cog(cog_name)
         cog = await cog._inject(self, override=override, guild=guild, guilds=guilds)
         self.__cogs[cog_name] = cog
 
     def get_cog(self, name: str, /) -> Optional[Cog]:
         return self.__cogs.get(name)
 
-    async def remove_cog(self, name: str, /, *, guild: Any = MISSING, guilds: Any = MISSING) -> Optional[Cog]:
+    async def _remove_cog(self, name: str, /, *, guild: Any = MISSING, guilds: Any = MISSING) -> Optional[Cog]:
         cog = self.__cogs.pop(name, None)
         if cog is None:
             return None
@@ -254,7 +286,7 @@ class BotBase(GroupMixin):
     async def _remove_module_references(self, name: str) -> None:
         for cogname, cog in self.__cogs.copy().items():
             if _is_submodule(name, cog.__module__):
-                await self.remove_cog(cogname)
+                await self._remove_cog(cogname)
         for cmd in self.all_commands.copy().values():
             if cmd.module is not None and _is_submodule(name, cmd.module):
                 if isinstance(cmd, GroupMixin):
@@ -316,7 +348,7 @@ class BotBase(GroupMixin):
         except ImportError:
             raise ExtensionNotFound(name)
 
-    async def load_extension(self, name: str, *, package: Optional[str] = None) -> None:
+    async def _load_extension(self, name: str, *, package: Optional[str] = None) -> None:
         """Load ``cogs.music`` etc. The module must define ``async def setup(bot)``."""
         name = self._resolve_name(name, package)
         if name in self.__extensions:
@@ -326,7 +358,7 @@ class BotBase(GroupMixin):
             raise ExtensionNotFound(name)
         await self._load_from_module_spec(spec, name)
 
-    async def unload_extension(self, name: str, *, package: Optional[str] = None) -> None:
+    async def _unload_extension(self, name: str, *, package: Optional[str] = None) -> None:
         name = self._resolve_name(name, package)
         lib = self.__extensions.get(name)
         if lib is None:
@@ -334,7 +366,7 @@ class BotBase(GroupMixin):
         await self._remove_module_references(lib.__name__)
         await self._call_module_finalizers(lib, name)
 
-    async def reload_extension(self, name: str, *, package: Optional[str] = None) -> None:
+    async def _reload_extension(self, name: str, *, package: Optional[str] = None) -> None:
         name = self._resolve_name(name, package)
         lib = self.__extensions.get(name)
         if lib is None:
@@ -343,7 +375,7 @@ class BotBase(GroupMixin):
         try:
             await self._remove_module_references(lib.__name__)
             await self._call_module_finalizers(lib, name)
-            await self.load_extension(name)
+            await self._load_extension(name)
         except Exception:
             r = lib.setup(self)  # type: ignore[attr-defined]
             if inspect.isawaitable(r):
@@ -351,6 +383,26 @@ class BotBase(GroupMixin):
             self.__extensions[name] = lib
             sys.modules.update(modules)
             raise
+
+    # -- discord.py 1.x and 2.x both work: sync-callable *and* awaitable ---------------------
+    # discord.py 1.x called these plainly (``bot.load_extension("cogs.fun")``); 2.x made them coroutines
+    # (``await bot.load_extension(...)``). Both styles run the work right away here; awaiting is optional.
+
+    def add_cog(self, cog: Cog, /, *, override: bool = False, guild: Any = MISSING, guilds: Any = MISSING) -> Any:
+        return _dual(self._add_cog(cog, override=override, guild=guild, guilds=guilds))
+
+    def remove_cog(self, name: str, /, *, guild: Any = MISSING, guilds: Any = MISSING) -> Any:
+        return _dual(self._remove_cog(name, guild=guild, guilds=guilds))
+
+    def load_extension(self, name: str, *, package: Optional[str] = None) -> Any:
+        """Load ``cogs.music`` etc. ``setup(bot)`` may be a plain or an ``async`` function."""
+        return _dual(self._load_extension(name, package=package))
+
+    def unload_extension(self, name: str, *, package: Optional[str] = None) -> Any:
+        return _dual(self._unload_extension(name, package=package))
+
+    def reload_extension(self, name: str, *, package: Optional[str] = None) -> Any:
+        return _dual(self._reload_extension(name, package=package))
 
     @property
     def extensions(self) -> Mapping[str, types.ModuleType]:

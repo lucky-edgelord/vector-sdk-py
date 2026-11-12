@@ -101,7 +101,7 @@ class Interaction:
         self.guild_locale = "en-US"
         self.extras: Dict[str, Any] = {}
         self._original: Optional["Message"] = None
-        self.created_at = message.created_at if message is not None else None
+        self.created_at = getattr(message, "created_at", None)
 
     @property
     def id(self) -> str:

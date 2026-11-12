@@ -71,7 +71,21 @@ class FakeNative:
         self.commands[name] = (description, args)
 
     def register_xdc(self, app, **opts):
-        return 1
+        self.xdc_handlers = getattr(self, "xdc_handlers", {})
+        hid = len(self.xdc_handlers) + 1
+        self.xdc_handlers[hid] = app
+        return hid
+
+    async def channel_send_xdc(self, cid, kind, path):
+        mid = hexid()
+        self.sent.append({"channel": cid, "xdc": path, "id": mid})
+        self.messages[mid] = {"chat_id": cid, "is_group": True, "author": BOT,
+                              "community_id": COMMUNITY if cid in (GENERAL, VOICE) else None,
+                              "message": raw_message("", BOT, mid=mid, mine=True)}
+        return {"message_id": mid, "chat_id": cid, "file_name": "panel.xdc", "file_hash": "h", "topic": "t"}
+
+    async def message_xdc(self, mid):
+        return {"message_id": mid, "chat_id": GENERAL, "file_name": "panel.xdc", "file_hash": "h", "topic": "t"}
 
     # profiles
     async def cached_profile(self, npub):

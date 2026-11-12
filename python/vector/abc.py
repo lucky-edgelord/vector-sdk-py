@@ -97,6 +97,7 @@ class Messageable:
         silent: bool = False,
         poll: Any = None,
         ephemeral: bool = False,
+        xdc: Any = None,
     ) -> "Message":
         """Send a message. Accepts discord.py's arguments.
 
@@ -107,6 +108,10 @@ class Messageable:
         * ``expires_in``: just the NIP-40 expiry, in seconds.
         * ``view``: a :class:`vector.ui.View`, rendered as reaction buttons.
         * ``to_bot``: address a specific bot's command (an npub).
+        * ``xdc=True``: show the content, embeds and ``view`` as a Mini App panel (real buttons, drop-downs,
+          form pop-ups and an embed card) instead of text and reactions. Pass a theme to style it:
+          ``xdc="discord"`` for Discord's look, or a :class:`vector.ui.Theme`. ``False`` forces plain text;
+          ``None`` follows ``view.xdc`` and the client's ``ui_mode``.
         """
         state = self._state
         native = state.native
@@ -118,6 +123,15 @@ class Messageable:
         all_files: List["File"] = list(files or [])
         if file is not None:
             all_files.insert(0, file)
+
+        if xdc is None:
+            xdc = getattr(view, "xdc", False) or (
+                getattr(state.client, "_ui_mode", "embed") == "xdc" and (view is not None or bool(all_embeds)))
+        if xdc is not False and xdc:
+            from .ui.xdc_ui import send_panel
+
+            return await send_panel(state.channel_for(channel_id, kind=kind), content=content, embeds=all_embeds,
+                                    files=all_files, view=view, delete_after=delete_after, theme=xdc)
 
         parts: List[str] = []
         if content is not None:
