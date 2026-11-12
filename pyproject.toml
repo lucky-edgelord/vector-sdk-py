@@ -1,0 +1,39 @@
+[build-system]
+requires = ["maturin>=1.7,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "vector-sdk-py"
+description = "A discord.py-style Python library for Vector messenger bots, powered by the official Rust vector_sdk."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+authors = [{ name = "lucky-edgelord" }]
+keywords = ["vector", "bot", "nostr", "messaging", "discord.py", "sdk"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: AsyncIO",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Rust",
+    "Topic :: Communications :: Chat",
+    "Typing :: Typed",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/lucky-edgelord/vector-sdk-py"
+"Vector SDK (Rust)" = "https://crates.io/crates/vector_sdk"
+
+[project.optional-dependencies]
+test = ["pytest>=7", "pytest-asyncio>=0.21"]
+
+[tool.maturin]
+python-source = "python"
+module-name = "vector._native"
+features = ["pyo3/extension-module"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

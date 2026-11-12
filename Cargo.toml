@@ -1,0 +1,34 @@
+[package]
+name = "vector_sdk_py"
+version = "0.1.0"
+edition = "2021"
+description = "Python bindings for the Vector messenger Rust SDK (vector_sdk)"
+license = "MIT"
+publish = false
+
+[lib]
+name = "_native"
+crate-type = ["cdylib"]
+
+[features]
+# Voice Channels and Mini Apps are on by default. Speech-to-text, Tor and I2P are opt-in:
+#   pip install . --config-settings=build-args="--features whisper"
+default = ["voice", "xdc"]
+voice = ["vector_sdk/voice"]
+xdc = ["vector_sdk/xdc"]
+whisper = ["voice", "vector_sdk/whisper"]
+tor = ["vector_sdk/tor"]
+i2p = ["vector_sdk/i2p"]
+
+[dependencies]
+vector_sdk = { version = "0.12.0", default-features = false }
+pyo3 = { version = "0.27", features = ["extension-module", "abi3-py39"] }
+pyo3-async-runtimes = { version = "0.27", features = ["tokio-runtime"] }
+tokio = { version = "1.49", features = ["rt", "rt-multi-thread", "macros", "sync", "time"] }
+serde = "1"
+serde_json = "1"
+
+[profile.release]
+lto = "thin"
+codegen-units = 4
+strip = true

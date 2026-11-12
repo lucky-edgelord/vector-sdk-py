@@ -1,0 +1,14 @@
+/target
+*.so
+*.pyd
+*.dylib
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+.pytest_cache/
+vector-bot-data/
+*.whl
