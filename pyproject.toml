@@ -4,6 +4,7 @@ build-backend = "maturin"
 
 [project.scripts]
 vector-run = "vector.compat:main"
+vector-port = "vector.port:main"
 
 [project]
 name = "vector-sdk-py"

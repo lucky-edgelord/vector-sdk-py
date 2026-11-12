@@ -261,6 +261,8 @@ MIT. `vector_sdk` is MIT-licensed by the Vector team.
 
 ## Porting an existing discord.py bot
 
+See the full [porting guide](docs/porting-from-discordpy.md). `vector-port check <bot>` reports what needs attention.
+
 No edits needed: run it through the compat runner and `import discord` resolves to this library.
 
 ```sh
