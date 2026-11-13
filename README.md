@@ -328,8 +328,6 @@ Run BDScript 2 and D.js-BDscript bots on Vector: every BDFD function plus Vector
 VECTOR_NSEC=nsec1... vector-bdscript run examples/bdscript
 ```
 
-aoi.js-style API (`AoiClient`, `client.command({...})`, SQLite storage): [docs/aoijs.md](docs/aoijs.md).
-
 Already have a bot? Attach the engine and call it from Python (details in the guide):
 
 ```python
@@ -340,3 +338,20 @@ text = bd.evaluate("$sum[2;3]")                      # "5", no bot needed
 ```
 
 Guide: [docs/bdscript.md](docs/bdscript.md) · Functions: [docs/bdscript-functions.md](docs/bdscript-functions.md)
+
+## aoi.js-style interface
+
+Prefer aoi.js's API? `AoiClient` gives you `client.command({...})`, `readyCommand`, `variables`, `loadCommands`,
+`functionErrorCommand`, `loopCommand` and `addFunction`. The code strings are BDScript, and storage is SQLite.
+
+```python
+from vector.ext.aoijs import AoiClient
+
+client = AoiClient({"prefix": "!", "database": {"path": "./database/aoi.db"}})
+client.variables({"coins": 0})
+client.command({"name": "ping", "code": "Pong! $ping ms"})
+client.command({"name": "coins", "code": "$username has $getUserVar[coins] coins."})
+client.run()                                         # VECTOR_NSEC from the environment
+```
+
+Guide: [docs/aoijs.md](docs/aoijs.md) · Example: [examples/aoijs](examples/aoijs)

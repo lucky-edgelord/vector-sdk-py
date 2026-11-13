@@ -43,3 +43,11 @@ database `type` and `db` are ignored.
 
 Commands for Discord-only events (`guildJoinCommand`, `roleCreateCommand`, `presenceUpdateCommand`, ...) are
 accepted so ported bots still load, but never run.
+
+## Notes for aoi.js users
+
+* Code is BDScript, not aoi.js's function set. BDScript runs top to bottom, and its embed functions don't take an
+  index first (`$title[text]`, not `$title[1;text]`). Message formatters such as `{newEmbed:...}` are not supported.
+* Every BDScript function is available, plus the Vector-only ones in [bdscript.md](bdscript.md).
+* Already running a regular bot? `BDScript(bot)` attaches the same engine to it; see [bdscript.md](bdscript.md).
+* Example bot: [examples/aoijs](../examples/aoijs).
