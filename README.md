@@ -287,7 +287,8 @@ not the API: IDs are strings (use TEXT columns, not INTEGER), and there are no g
 
 `pip install "vector-sdk-py[webhooks]"` adds a server that accepts Discord webhook requests and posts them into Vector
 channels, so anything that can call a Discord webhook (CI, Grafana, GitHub, uptime monitors, scripts) can post to
-Vector by swapping the URL. See [`examples/webhook_server.py`](examples/webhook_server.py).
+Vector by swapping the URL. Full guide: [docs/webhooks.md](docs/webhooks.md); example:
+[`examples/webhook_server.py`](examples/webhook_server.py).
 
 ```sh
 VECTOR_NSEC=nsec1… vector-webhooks serve --base-url https://hooks.example.com --admin-key change-me
