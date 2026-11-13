@@ -21,7 +21,7 @@ client.run("nsec1...")           # or set VECTOR_NSEC; client.login(...) works t
 ## Options
 
 `token`, `prefix` (string or list), `database` (a SQLite path or `{"path": ...}`), `mentionAuthor`, plus any
-`vector.Client` option (`data_dir`, ...). aoi.js's `intents`, `events`, `respondOnEdit`, `sharding`, `cache` and
+`vector.Client` option (`data_dir`, `reply_ordering`, ...). aoi.js's `intents`, `events`, `respondOnEdit`, `sharding`, `cache` and
 `debugs` are accepted so ported code loads. **Storage is always SQLite** (default `./database/aoi.db`); aoi.js's
 database `type` and `db` are ignored.
 
@@ -51,3 +51,9 @@ accepted so ported bots still load, but never run.
 * Every BDScript function is available, plus the Vector-only ones in [bdscript.md](bdscript.md).
 * Already running a regular bot? `BDScript(bot)` attaches the same engine to it; see [bdscript.md](bdscript.md).
 * Example bot: [examples/aoijs](../examples/aoijs).
+
+## Reply order
+
+Vector sorts messages by whole-second timestamps, so an instant reply could appear above the message it answers.
+Sends therefore wait (at most ~2.5 s, usually well under one) until the bot's clock passes the incoming message's
+second. Pass `reply_ordering=False` to turn it off. See the README for details.

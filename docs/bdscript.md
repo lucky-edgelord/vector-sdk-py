@@ -179,3 +179,9 @@ inline `$if[condition;then;else]` works too (a `$if` with two or three arguments
 
 `$exec` is off unless `BDBot(allow_exec=True)`; local file paths (for `$attachment`, `$sendMiniApp`, music) need
 `allow_files=True`; HTTP can be turned off with `allow_http=False`.
+
+## Reply order
+
+Replies are timestamped after the message they answer: sends wait briefly (at most ~2.5 s) when needed, so a fast
+reply never shows above the question. This is on by default for every bot; `BDBot(..., reply_ordering=False)`
+turns it off.
