@@ -22,7 +22,8 @@ async def serve(nsec: str, *, host: str = "0.0.0.0", port: int = 8080, db: str =
 
     base_url = base_url or f"http://localhost:{port}"
     store = WebhookStore(db)
-    bot = commands.Bot(command_prefix=prefix, intents=Intents.all(), data_dir=data_dir)
+    bot = commands.Bot(command_prefix=prefix, intents=Intents.all(), data_dir=data_dir, webhook_base_url=base_url)
+    bot.webhook_store = store  # channel.create_webhook() and the HTTP server share one store
     await bot.add_cog(WebhookCog(bot, store, base_url))
     app = create_app(bot, store, admin_key=admin_key, base_url=base_url)
     server = uvicorn.Server(uvicorn.Config(app, host=host, port=port, log_level="info"))

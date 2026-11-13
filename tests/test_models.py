@@ -71,7 +71,7 @@ def test_every_discord_py_top_level_class_imports():
 
 
 def test_stubs_import_subclass_and_fail_clearly():
-    from vector import MemberFlags, MessageType, NotSupportedOnVector, Thread, Webhook
+    from vector import MemberFlags, MessageType, NotSupportedOnVector, StageChannel, Thread
 
     class MyThread(Thread):
         pass
@@ -79,7 +79,7 @@ def test_stubs_import_subclass_and_fail_clearly():
     assert not isinstance(object(), Thread) and MessageType.default is MessageType.default
     assert MemberFlags().bot_http_interactions is False
     with pytest.raises(NotSupportedOnVector):
-        Webhook()
+        StageChannel()
     from vector.ext import commands, tasks
     assert commands.FlagConverter and commands.BadFlagArgument and tasks.ExponentialBackoff
 
@@ -88,12 +88,12 @@ def test_vector_port_flags_and_fixes(tmp_path):
     from vector import port
 
     f = tmp_path / "bot.py"
-    f.write_text('import discord\nfrom discord import Webhook\nX = 123456789012345678\n'
+    f.write_text('import discord\nfrom discord import Thread\nX = 123456789012345678\n'
                  'db = """\nCREATE TABLE g (GuildID integer PRIMARY KEY, id INTEGER, user_id INTEGER);\n"""\n'
                  'discord.Nonsense\n')
     found = port.check(str(f))
     msgs = " ".join(str(x) for x in found)
-    assert "Nonsense has no Vector equivalent" in msgs and "Webhook is a Discord-only" in msgs
+    assert "Nonsense has no Vector equivalent" in msgs and "Thread is a Discord-only" in msgs
     assert "hard-coded Discord ID" in msgs and "ID column declared INTEGER" in msgs
     port.check(str(f), fix=True)
     text = f.read_text()

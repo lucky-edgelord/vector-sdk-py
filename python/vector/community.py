@@ -619,6 +619,13 @@ class Community:
         """Invite a specific user (by npub) directly."""
         await self._state.native.community_invite(self.id, getattr(user, "npub", user))
 
+    async def webhooks(self) -> List[Any]:
+        """Every webhook in this community (``discord.Guild.webhooks``)."""
+        from .webhook import Webhook
+
+        client = self._state.client
+        return [Webhook._from_row(r, None, client) for r in client.webhook_store.list(community_id=self.id)]
+
     async def create_invite(self, *, max_age: int = 0, label: Optional[str] = None, **ignored: Any) -> Invite:
         """A shareable join link. ``max_age`` in seconds (0 = never expires)."""
         expires = _now_ms() + max_age * 1000 if max_age else None

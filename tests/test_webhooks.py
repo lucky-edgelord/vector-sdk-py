@@ -94,3 +94,61 @@ async def test_admin_api(harness_factory, tmp_path):
     assert (await http.delete(f"/admin/webhooks/{made['id']}", headers=auth)).status_code == 204
     assert (await http.post(f"/api/webhooks/{made['id']}/{made['token']}", json={"content": "x"})).status_code == 404
     assert (await http.get("/health")).json()["ok"] is True
+
+
+# ---- bot-side discord.Webhook API ---------------------------------------------------------------------------
+
+async def test_bot_side_webhook_api(harness_factory, tmp_path):
+    client = vector.Client(webhook_db=str(tmp_path / "b.db"), webhook_base_url="https://hooks.example")
+    h = await harness_factory(client)
+    channel = client.get_channel(GENERAL)
+
+    wh = await channel.create_webhook(name="Alerts")
+    assert isinstance(wh, vector.Webhook) and wh.channel_id == GENERAL
+    assert wh.url == f"https://hooks.example/api/webhooks/{wh.id}/{wh.token}"
+    assert [w.id for w in await channel.webhooks()] == [wh.id]
+    assert [w.id for w in await channel.guild.webhooks()] == [wh.id]
+
+    assert await wh.send("plain") is None
+    msg = await wh.send("down!", username="Pager", embed=vector.Embed(title="db1"), wait=True)
+    assert isinstance(msg, vector.WebhookMessage) and msg.id == h.native.sent[-1]["id"]
+    assert h.native.sent[-1]["text"].startswith("**Pager**\ndown!") and "db1" in h.native.sent[-1]["text"]
+
+    await msg.edit(content="recovered")
+    assert h.native.edits[-1][1] == "recovered" if hasattr(h.native, "edits") else True
+    again = vector.Webhook.from_url(wh.url, client=client)          # bot-side again, by URL
+    assert again.name == "Alerts" and again._local()
+    await again.delete_message(msg.id)
+    with pytest.raises(vector.NotFound):
+        await again.fetch_message(msg.id)
+
+    await wh.edit(name="Ops")
+    assert (await wh.fetch()).name == "Ops"
+    await wh.delete()
+    assert await channel.webhooks() == []
+
+
+async def test_url_only_webhook_over_http(harness_factory, tmp_path, monkeypatch):
+    from vector import webhook as wmod
+
+    h, store, row, token, http = await _setup(harness_factory, tmp_path)
+
+    async def fake(method, url, payload=None, files=()):
+        path = url.replace("https://hooks.example", "")
+        body, ctype = wmod._encode(payload or {}, files) if (payload is not None or files) else (None, None)
+        r = await http.request(method, path, content=body, headers={"content-type": ctype} if ctype else {})
+        return r.status_code, r.text
+
+    monkeypatch.setattr(wmod, "_async_request", fake)
+    wh = vector.Webhook.from_url(f"https://hooks.example/api/v10/webhooks/{row.id}/{token}")
+    assert not wh._local()
+    m = await wh.send("over http", username="CI", embeds=[vector.Embed(title="Build")],
+                      file=vector.File(b"\x89PNG", filename="c.png"), wait=True)
+    assert m.content == "over http" and h.native.sent[-1]["file"] == "c.png"
+    await wh.send("no wait")
+    assert h.native.sent[-1]["text"] == "no wait"
+    assert (await wh.fetch()).channel_id == GENERAL
+    with pytest.raises(vector.Forbidden):
+        await vector.Webhook.from_url(f"https://hooks.example/api/webhooks/{row.id}/bad").send("x")
+    with pytest.raises(ValueError):
+        vector.Webhook.from_url("https://example.com/nope")

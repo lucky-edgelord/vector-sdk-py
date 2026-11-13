@@ -94,8 +94,13 @@ class Client:
         activity: Optional[Activity] = None,
         status: Any = None,
         loop: Optional[asyncio.AbstractEventLoop] = None,
+        webhook_base_url: Optional[str] = None,
+        webhook_db: Optional[str] = None,
         **options: Any,
     ):
+        self._webhook_base_url = webhook_base_url
+        self._webhook_db = webhook_db
+        self._webhook_store_obj: Any = None
         self.intents = intents or Intents.default()
         self._options = dict(
             data_dir=data_dir, invite_policy=invite_policy, whitelist=list(whitelist) if whitelist else None,
@@ -191,6 +196,27 @@ class Client:
     # ------------------------------------------------------------------------------------
     # getters / fetchers
     # ------------------------------------------------------------------------------------
+
+    @property
+    def webhook_store(self) -> Any:
+        """Where this bot's webhooks live (SQLite; ``Client(webhook_db=...)``, ``$WEBHOOKS_DB`` or
+        ``<data_dir>/webhooks.db``). Share the path with a ``vector-webhooks`` server to serve their URLs."""
+        if self._webhook_store_obj is None:
+            import os
+
+            from .ext.webhooks.store import WebhookStore
+
+            path = self._webhook_db or os.environ.get("WEBHOOKS_DB")
+            if not path:
+                d = self._options.get("data_dir") or "vector-bot-data"
+                os.makedirs(d, exist_ok=True)
+                path = os.path.join(d, "webhooks.db")
+            self._webhook_store_obj = WebhookStore(path)
+        return self._webhook_store_obj
+
+    @webhook_store.setter
+    def webhook_store(self, store: Any) -> None:
+        self._webhook_store_obj = store
 
     def get_community(self, community_id: str, /) -> Optional[Community]:
         return self._connection.get_community(community_id)

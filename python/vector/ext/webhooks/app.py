@@ -96,7 +96,8 @@ def create_app(client: Any, store: WebhookStore, *, admin_key: Optional[str] = N
         return {"id": wh.id, "type": 1, "name": wh.name, "avatar": None, "channel_id": wh.channel_id,
                 "guild_id": wh.community_id, "application_id": None, "token": None}
 
-    async def deliver(wh: Webhook, text: str, embeds: List[Any], files: List[Tuple[str, bytes]], wait: bool) -> Response:
+    async def deliver(wh: Webhook, text: str, embeds: List[Any], files: List[Tuple[str, bytes]], wait: bool,
+                      shown: Optional[str] = None, username: Optional[str] = None) -> Response:
         if not text and not embeds and not files:
             return _err(400, "Cannot send an empty message", 50006)
         retry = limiter.check(wh.id)
@@ -114,8 +115,9 @@ def create_app(client: Any, store: WebhookStore, *, admin_key: Optional[str] = N
         store.add_message(sent.id, wh.id, wh.channel_id)
         if not wait:
             return Response(status_code=204)
-        return JSONResponse(message_json(msg_id=sent.id, channel_id=wh.channel_id, webhook_id=wh.id, name=wh.name,
-                                         content=text, embeds=embeds))
+        return JSONResponse(message_json(msg_id=sent.id, channel_id=wh.channel_id, webhook_id=wh.id,
+                                         name=username or wh.name, content=text if shown is None else shown,
+                                         embeds=embeds))
 
     # -- Discord-compatible routes -------------------------------------------------------------------------
 
@@ -130,7 +132,8 @@ def create_app(client: Any, store: WebhookStore, *, admin_key: Optional[str] = N
                 text, embeds = discord_payload(payload)
             except PayloadError as e:
                 return _err(400, str(e), e.code)
-            return await deliver(wh, text, embeds, files, wait)
+            return await deliver(wh, text, embeds, files, wait, shown=payload.get("content") or "",
+                                 username=payload.get("username"))
 
         @app.post(base + "/slack")
         async def execute_slack(wid: str, token: str, request: Request, wait: bool = False) -> Response:

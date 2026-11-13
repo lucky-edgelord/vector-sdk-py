@@ -278,12 +278,16 @@ not the API: IDs are strings (use TEXT columns, not INTEGER), and there are no g
 - **One bot per process.** The Rust SDK is process-global; a second `Client` raises `ClientException`. Run extra bots in
   separate processes.
 - **IDs are strings** (64-hex ids and npubs). Ported bots that store them in INTEGER database columns need TEXT columns.
-- **Discord-only features are stubs.** Every public `discord.py` class (`Thread`, `Webhook`, `StageChannel`, `Poll`,
+- **Discord-only features are stubs.** Every public `discord.py` class (`Thread`, `StageChannel`, `Poll`,
   `MessageType`, `MemberFlags`, `VerificationLevel`, Components V2 like `ui.Container`, `commands.FlagConverter`, and
   so on) imports, subclasses and type-checks, so a ported bot starts. *Using* one (instantiating a `Webhook`, a flag
   converter, …) raises `vector.NotSupportedOnVector` with a clear message. Stubs have `__vector_stub__ = True`.
 
 ## Discord-compatible webhooks (FastAPI)
+
+In a bot, discord.py's webhook API works as-is: `await channel.create_webhook(name=...)`, `webhook.send(...)`,
+`Webhook.from_url(...)`, `SyncWebhook`. For outside tools:
+
 
 `pip install "vector-sdk-py[webhooks]"` adds a server that accepts Discord webhook requests and posts them into Vector
 channels, so anything that can call a Discord webhook (CI, Grafana, GitHub, uptime monitors, scripts) can post to

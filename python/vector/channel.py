@@ -288,6 +288,21 @@ class TextChannel(_Base, GuildChannel):
         return await self.community.create_text_channel(name or self.name, category=self.category, topic=self.topic,
                                                         private=self.private)
 
+    async def create_webhook(self, *, name: str, avatar: Any = None, reason: Optional[str] = None) -> Any:
+        """Create a Discord-style webhook for this channel (``discord.TextChannel.create_webhook``)."""
+        from .webhook import Webhook
+
+        client = self._state.client
+        row, token = client.webhook_store.create(name, self.id, self.community.id, None)
+        return Webhook._from_row(row, token, client)
+
+    async def webhooks(self) -> List[Any]:
+        """This channel's webhooks. Tokens aren't kept, so ``url`` is only known when the webhook was created."""
+        from .webhook import Webhook
+
+        client = self._state.client
+        return [Webhook._from_row(r, None, client) for r in client.webhook_store.list(channel_id=self.id)]
+
     async def create_invite(self, *, max_age: int = 0, label: Optional[str] = None, **ignored: Any):
         return await self.community.create_invite(max_age=max_age, label=label)
 

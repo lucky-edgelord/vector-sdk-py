@@ -1,5 +1,11 @@
 # Discord-compatible webhooks
 
+There are two halves, both matching Discord:
+
+* **In your bot:** discord.py's webhook API (`channel.create_webhook`, `Webhook.send`, `SyncWebhook`, …). See
+  [Bot-side API](#bot-side-api-discordwebhook) below. No server needed unless you want URLs that outside tools can call.
+* **For outside tools:** an HTTP server that accepts Discord webhook requests (sections 1 to 4).
+
 Run one small server and any tool that can post to a Discord webhook (GitHub, Grafana, CI, uptime monitors, your own
 scripts) can post to a Vector channel instead. You swap the URL; nothing else changes.
 
@@ -115,3 +121,33 @@ app = create_app(bot, store, admin_key="...", base_url="https://hooks.example.co
 ```
 
 `create_app` returns a normal FastAPI app, so you can mount it inside a bigger service.
+
+
+## Bot-side API (`discord.Webhook`)
+
+Ported code that uses webhooks keeps working:
+
+```python
+wh = await channel.create_webhook(name="Alerts")        # manage_webhooks is always granted on Vector
+await wh.send("disk full", username="Pager", embed=embed)
+msg = await wh.send("building…", wait=True)              # -> WebhookMessage
+await msg.edit(content="done")                          # or wh.edit_message(msg.id, ...)
+await msg.delete()                                      # or wh.delete_message(msg.id)
+hooks = await channel.webhooks()                        # also guild.webhooks()
+await wh.edit(name="Ops"); await wh.delete()
+
+wh = discord.Webhook.from_url(url, client=bot)          # a hook this bot owns: sent through the bot directly
+wh = discord.Webhook.from_url(url)                      # any URL: sent over HTTP to a vector-webhooks server
+discord.SyncWebhook.from_url(url).send("from a script") # blocking version, no bot needed
+```
+
+* Webhooks the bot creates live in `<data_dir>/webhooks.db` (or `Client(webhook_db=...)`, `$WEBHOOKS_DB`). Point a
+  `vector-webhooks` server at the same file (`--db`) and their `wh.url` works for outside tools too;
+  `vector-webhooks serve` already shares one store with its bot.
+* `wh.url` uses `Client(webhook_base_url=...)` or `$WEBHOOKS_BASE_URL` (default `http://localhost:8080`).
+* Tokens are stored hashed, so `channel.webhooks()` returns hooks with `token=None` (as when Discord lists them
+  without the token). Keep the URL from `create_webhook` if you need it later.
+* `username` becomes a bold first line; `avatar_url`, `thread`, `allowed_mentions`, `tts` are accepted and ignored.
+  A `view=` on a bot-side send works (reaction buttons).
+* Moving a webhook to another channel (`edit(channel=...)`) isn't supported.
+* `aiohttp` sessions passed as `session=` are accepted and ignored; HTTP goes through the standard library.

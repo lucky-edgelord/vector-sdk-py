@@ -18,7 +18,7 @@ your `nsec1…`).
 ## What works the same
 
 Decorators and events, `commands.Bot`/`Cog`/`Context`, checks, cooldowns, converters, `wait_for`, `tasks.loop`,
-`Embed`, `ui.View`/`Button`/`Select`/`Modal` (as reactions), `ext.menus`, `load_extension`/`add_cog` (sync and
+`Embed`, webhooks (`create_webhook`, `Webhook.from_url`, `SyncWebhook`), `ui.View`/`Button`/`Select`/`Modal` (as reactions), `ext.menus`, `load_extension`/`add_cog` (sync and
 awaited forms), slash-style commands (published to Vector's `/` picker).
 
 ## What is different
@@ -31,7 +31,8 @@ awaited forms), slash-style commands (published to Vector's `/` picker).
 | Bot token | `nsec…` secret key | pass it to `bot.run` |
 | Embeds | Rendered as Vector markdown (quote bar, table for fields, always Vector's colours) | nothing; colours you set are ignored |
 | Buttons, selects | Emoji reactions under the message | nothing; a button without an emoji gets 🇦 🇧 🇨 |
-| Threads, webhooks, stages, stickers, polls, Components V2, `FlagConverter` | not in Vector | stubs: the bot starts, using one raises `vector.NotSupportedOnVector` |
+| Webhooks | `discord.Webhook`, `SyncWebhook`, `channel.create_webhook` work (see [webhooks](webhooks.md)) | nothing |
+| Threads, stages, stickers, polls, Components V2, `FlagConverter` | not in Vector | stubs: the bot starts, using one raises `vector.NotSupportedOnVector` |
 | Presence/status, intents | partly ignored | `change_presence` may fail; intents are accepted |
 | Several bots in one process | one bot per process | run extra bots as separate processes |
 
