@@ -282,3 +282,22 @@ not the API: IDs are strings (use TEXT columns, not INTEGER), and there are no g
   `MessageType`, `MemberFlags`, `VerificationLevel`, Components V2 like `ui.Container`, `commands.FlagConverter`, and
   so on) imports, subclasses and type-checks, so a ported bot starts. *Using* one (instantiating a `Webhook`, a flag
   converter, …) raises `vector.NotSupportedOnVector` with a clear message. Stubs have `__vector_stub__ = True`.
+
+## Discord-compatible webhooks (FastAPI)
+
+`pip install "vector-sdk-py[webhooks]"` adds a server that accepts Discord webhook requests and posts them into Vector
+channels, so anything that can call a Discord webhook (CI, Grafana, GitHub, uptime monitors, scripts) can post to
+Vector by swapping the URL. See [`examples/webhook_server.py`](examples/webhook_server.py).
+
+```sh
+VECTOR_NSEC=nsec1… vector-webhooks serve --base-url https://hooks.example.com --admin-key change-me
+```
+
+* `!webhook create <name>` in a channel (needs `manage_channels`) DMs you the URL once; `!webhook list`/`delete`
+* `POST /api/webhooks/{id}/{token}`: Discord JSON or multipart (`payload_json` + files), `?wait=true`, embeds,
+  `username`; plus `…/slack` and `…/github` bodies
+* `GET/PATCH/DELETE` on the webhook and on `…/messages/{id}`, `/api/v9` and `/api/v10` prefixes, `429` with
+  `Retry-After`, Discord-shaped JSON errors
+* `POST /admin/webhooks` (bearer key) to create hooks over HTTP; tokens are stored hashed
+
+Vector has no per-message name or avatar, so `username` becomes a bold first line and `avatar_url` is ignored.

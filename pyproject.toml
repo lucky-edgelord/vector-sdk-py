@@ -5,6 +5,7 @@ build-backend = "maturin"
 [project.scripts]
 vector-run = "vector.compat:main"
 vector-port = "vector.port:main"
+vector-webhooks = "vector.ext.webhooks.cli:main"
 
 [project]
 name = "vector-sdk-py"
@@ -31,7 +32,8 @@ Homepage = "https://github.com/lucky-edgelord/vector-sdk-py"
 "Vector SDK (Rust)" = "https://crates.io/crates/vector_sdk"
 
 [project.optional-dependencies]
-test = ["pytest>=7", "pytest-asyncio>=0.21"]
+test = ["pytest>=7", "pytest-asyncio>=0.21", "fastapi>=0.110", "httpx>=0.27", "python-multipart>=0.0.9"]
+webhooks = ["fastapi>=0.110", "uvicorn>=0.29", "python-multipart>=0.0.9"]
 
 [tool.maturin]
 python-source = "python"
