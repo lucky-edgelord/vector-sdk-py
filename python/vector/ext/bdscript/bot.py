@@ -33,7 +33,8 @@ log = logging.getLogger("vector.bdscript")
 FORK_TYPES = {"basicCommand": "message", "readyCommand": "ready", "slashCommand": "slash", "buttonCommand": "interaction",
               "musicStartCommand": "musicStart", "musicEndCommand": "musicEnd", "joinCommand": "join",
               "leaveCommand": "leave", "interactionCommand": "interaction", "awaitedCommand": "awaited",
-              "deleteCommand": "delete", "banAddCommand": "banAdd", "banRemoveCommand": "banRemove"}
+              "deleteCommand": "delete", "banAddCommand": "banAdd", "banRemoveCommand": "banRemove",
+              "reactionCommand": "reaction"}
 _CALLBACK = re.compile(r"^\$(onJoined|onLeave|onInteraction|onInteractionComplex|awaitedCommand|awaitedCommandError|"
                        r"onBanAdd|onBanRemove|onMessageDelete|onAutoComplete|alwaysReply|reaction)(?:\[(.*)\])?$",
                        re.IGNORECASE)
@@ -134,6 +135,9 @@ class CommandManager:
                 spec = importlib.util.spec_from_file_location(f"_bds_{abs(hash(full))}", full)
                 mod = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(mod)  # type: ignore[union-attr]
+                if hasattr(mod, "exports"):   # aoi.js: module.exports = {...} or [...]
+                    ex = mod.exports
+                    return list(ex) if isinstance(ex, (list, tuple)) else [ex]
                 if hasattr(mod, "commands"):
                     return list(mod.commands)
                 if hasattr(mod, "command"):
@@ -358,7 +362,7 @@ class BDBot:
             cmd.kind, cmd.arg = _KIND[cb.group(1).lower()], (cb.group(2) or "").strip()
         elif cmd.type in FORK_TYPES:
             cmd.kind = FORK_TYPES[cmd.type]
-            cmd.arg = cmd.name if cmd.kind == "interaction" else ""
+            cmd.arg = cmd.name if cmd.kind in ("interaction", "awaited") else ""
         elif cmd.type in ("slash", "slashCommand"):
             cmd.kind = "slash"
         low = code.lower()

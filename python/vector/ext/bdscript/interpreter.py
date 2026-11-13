@@ -294,6 +294,18 @@ async def run(ctx: Context, code: str, *, send: bool = True) -> str:
             ctx.response.rows = [[]]
             if ctx.embed_suppress_errors:
                 ctx.response.embeds[1] = ctx.embed_suppress_errors["embed"]
+        elif getattr(ctx.bot, "function_error_code", None) and not ctx.in_error_handler:
+            # aoi.js functionErrorCommand: a custom handler renders the error
+            ctx.in_error_handler = True
+            ctx.error = {"function": f"${e.call.raw}", "command": getattr(ctx.command, "name", "") or "",
+                         "error": e.message, "message": e.message, "row": str(e.call.line), "column": str(e.call.col)}
+            ctx.response.embeds.clear()
+            ctx.response.rows = [[]]
+            try:
+                text = await evaluate(ctx, compile_code(ctx.bot.function_error_code))
+            except (FunctionError, StopExecution):
+                text = e.render()
+            ctx.failure = e.render()
         else:
             error_text = e.render()
             text = error_text

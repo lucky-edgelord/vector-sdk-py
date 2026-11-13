@@ -328,6 +328,8 @@ Run BDScript 2 and D.js-BDscript bots on Vector: every BDFD function plus Vector
 VECTOR_NSEC=nsec1... vector-bdscript run examples/bdscript
 ```
 
+aoi.js-style API (`AoiClient`, `client.command({...})`, SQLite storage): [docs/aoijs.md](docs/aoijs.md).
+
 Already have a bot? Attach the engine and call it from Python (details in the guide):
 
 ```python

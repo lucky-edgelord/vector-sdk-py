@@ -110,6 +110,7 @@ class Context:
         self.depth = 0
         self.awaited: Optional[Dict[str, Any]] = None
         self.loop: Dict[str, Any] = {}
+        self.in_error_handler = False
         self.failure: Optional[str] = None           # set when the run ended in an error / failed guard
 
     # -- convenience --------------------------------------------------------------------------------------

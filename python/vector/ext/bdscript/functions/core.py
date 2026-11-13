@@ -150,9 +150,9 @@ def _argscheck(ctx, how, msg=""):
     return ""
 
 
-@fn("error", min_args=1, brackets="required")
+@fn("error", "handleError", min_args=1, brackets="required")
 def _error(ctx, kind):
-    if kind not in ("command", "message", "source", "row", "column"):
+    if kind not in ("command", "message", "source", "row", "column", "function", "error"):
         raise BDScriptError(f"invalid error type '{kind}'")
     return ctx.error.get(kind, "")
 

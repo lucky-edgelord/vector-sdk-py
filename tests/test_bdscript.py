@@ -248,3 +248,44 @@ def test_standalone_evaluate_without_event_loop():
     bd = BDScript(database=":memory:", listen=False)
     assert bd.evaluate("$calculate[6*7] $toTitleCase[a b]") == "42 A B"
     assert bd.evaluate("$notReal[x]") == "$notReal[x]"
+
+
+async def test_aoijs_client_api(harness_factory, tmp_path):
+    from vector.ext.aoijs import AoiClient
+
+    client = AoiClient({"token": "x", "prefix": "!", "intents": ["MessageContent", "Guilds"],
+                        "events": ["onMessage", "onInteractionCreate"], "database": {"path": str(tmp_path / "a.db")}})
+    client.variables({"coins": 5}, "main")
+    client.command({"name": "ping", "aliases": ["pong"], "code": "Pong!"},
+                   {"name": "wallet", "code": "$getVar[coins] coins"})
+    client.command({"name": "hello", "nonPrefixed": True, "code": "hi there"})
+    client.onMessage().onInteractionCreate()          # accepted, chainable
+    client.guildJoinCommand({"code": "never"})        # Discord-only event: accepted
+    client.functionErrorCommand({"code": "oops in $handleError[function]: $handleError[error]"})
+    client.addFunction({"name": "$greet", "params": ["who"], "type": "aoi.js", "code": "Hello {who}!"})
+    client.addFunction({"name": "$shout", "type": "djs", "code": lambda ctx, text="": text.upper() + "!"})
+    client.command({"name": "g", "code": "$greet[Ada] $shout[hey]"})
+    client.command({"name": "bad", "code": "$sum[a;1]"})
+    (tmp_path / "cmds").mkdir()
+    (tmp_path / "cmds" / "one.py").write_text('exports = [{"name": "loaded", "code": "from file"}]\n')
+    (tmp_path / "cmds" / "two.json").write_text('{"name": "jsoncmd", "type": "basic", "code": "from json"}')
+    assert client.loadCommands(str(tmp_path / "cmds")) == 2
+    with pytest.raises(TypeError):
+        client.command({"name": "nocode"})
+    with pytest.raises(TypeError):
+        client.interactionCommand({"name": "x", "code": "y"})
+    client.interactionCommand({"name": "yes", "prototype": "button", "code": "clicked"})
+    client.awaitedCommand({"name": "ask", "code": "got it"})
+
+    h = await harness_factory(client.client)
+    for text in ("!ping", "!pong", "!wallet", "hello", "!g", "!bad", "!loaded", "!jsoncmd"):
+        await h.say(text)
+    await asyncio.sleep(0.2)
+    out = h.texts[-8:]
+    assert out[0] == "Pong!" and out[1] == "Pong!" and out[2] == "5 coins" and out[3] == "hi there"
+    assert out[4] == "Hello Ada! HEY!"
+    assert out[5].startswith("oops in $sum: ") and "number" in out[5].lower()
+    assert out[6] == "from file" and out[7] == "from json"
+    kinds = {(c.kind, c.arg) for c in client.commands}
+    assert ("interaction", "yes") in kinds and ("awaited", "ask") in kinds
+    await h.stop()
