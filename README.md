@@ -1,6 +1,6 @@
 # vector-sdk-py
 
-**A discord.py-style Python library for [Vector](https://vectorapp.io) messenger bots, powered by the official Rust [`vector_sdk`](https://crates.io/crates/vector_sdk).**
+**An unofficial, community-maintained, discord.py-style Python library for [Vector](https://vectorapp.io) messenger bots, powered by the official Rust [`vector_sdk`](https://crates.io/crates/vector_sdk).**
 
 If you've written a discord.py bot, you already know this library. It has the same decorators, cogs, `ctx`, checks, cooldowns, converters, `wait_for`, `tasks.loop`, embeds and views. Underneath, every network, crypto and storage call runs in the Rust SDK (compiled into the package with [PyO3](https://pyo3.rs)), so you get its MLS-style Communities, NIP-17 DMs, Mini Apps and voice without writing any Rust.
 
@@ -266,9 +266,16 @@ pytest tests                     # the Python layer is tested against a fake nat
 Layout: `src/` is the PyO3 binding (`vector._native`, a thin layer over `vector_sdk`), and `python/vector/` is the
 discord.py-style API built on top.
 
-## License
+## License and affiliation
 
-MIT. `vector_sdk` is MIT-licensed by the Vector team.
+MIT (see [LICENSE](LICENSE)). The compiled Rust crate [`vector_sdk`](https://crates.io/crates/vector_sdk) is
+MIT-licensed by the Vector team; its notice and other third-party notices are in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+vector-sdk-py is an independent project. It is **not** affiliated with, endorsed by or maintained by Vector,
+discord.py, Discord, Bot Designer for Discord (BDFD) or aoi.js. Those names are used only to say what the
+library is compatible with (the API shapes and the `$function[arg;arg]` syntax); the code here is an independent
+implementation that talks to Vector, not to Discord or BDFD.
 
 
 ## Porting an existing discord.py bot
