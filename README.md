@@ -355,3 +355,11 @@ client.run()                                         # VECTOR_NSEC from the envi
 ```
 
 Guide: [docs/aoijs.md](docs/aoijs.md) · Example: [examples/aoijs](examples/aoijs)
+
+## Reply ordering
+
+Vector sorts messages by whole-second timestamps. A bot that answers instantly can have its reply stamped in the
+same second as (or, with a little clock skew, before) the message it answers, so the reply shows up *above* the
+question. By default every send waits (at most ~2.5 s, usually under a second) until the bot's clock has passed the
+newest incoming message's second. Turn it off with `Client(reply_ordering=False)` (or `AoiClient`/`BDBot`
+options).

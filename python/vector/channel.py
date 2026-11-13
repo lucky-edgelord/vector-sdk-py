@@ -43,6 +43,7 @@ class _Base(Messageable):
         from .xdc import XdcApp
 
         cid, kind = await self._get_channel_target()
+        await self._state.order_after_incoming(cid)
         data = await self._state.native.channel_send_xdc(cid, kind, str(path))
         return XdcApp(self._state, data["message_id"], data)
 

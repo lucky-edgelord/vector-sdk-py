@@ -289,3 +289,35 @@ async def test_aoijs_client_api(harness_factory, tmp_path):
     kinds = {(c.kind, c.arg) for c in client.commands}
     assert ("interaction", "yes") in kinds and ("awaited", "ask") in kinds
     await h.stop()
+
+
+async def test_reply_is_timestamped_after_the_message_it_answers(harness_factory):
+    import math
+    import time
+
+    from conftest import incoming
+
+    client = vector.Client()
+    stamps = []
+
+    @client.event
+    async def on_message(message):
+        if message.content == "ping":
+            await message.channel.send("pong")
+            stamps.append(time.time())
+
+    h = await harness_factory(client)
+    client.reply_ordering = True
+    ahead = int((time.time() + 0.9) * 1000)           # sender's clock is ~1s ahead of ours
+    inc = incoming("ping")
+    inc["message"]["at"] = ahead
+    await h.emit({"type": "message", "message": inc}, settle=0.05)
+    await asyncio.sleep(2.5)
+    assert stamps and stamps[0] >= math.floor(ahead / 1000) + 1        # reply sent after the sender's second
+    client.reply_ordering = False
+    inc2 = incoming("ping")
+    inc2["message"]["at"] = int((time.time() + 0.9) * 1000)
+    t0 = time.time()
+    await h.emit({"type": "message", "message": inc2}, settle=0.3)
+    assert time.time() - t0 < 0.8 and len(stamps) == 2                 # switched off: no waiting
+    await h.stop()

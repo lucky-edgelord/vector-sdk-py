@@ -226,6 +226,7 @@ class Harness:
         from vector.user import ClientUser, Profile
 
         c = self.client
+        c.reply_ordering = False   # tests expect immediate replies; the ordering wait has its own test
         state = c._connection
         state.native = self.native
         state.self_npub = self.native.npub

@@ -294,6 +294,33 @@ class ConnectionState:
         else:
             self.client.dispatch("resumed")
 
+    def note_incoming(self, chat_id: str, msg: Any) -> None:
+        """Remember when the newest incoming message of a chat was sent (see ``order_after_incoming``)."""
+        try:
+            at = msg.created_at.timestamp()
+        except Exception:
+            return
+        book = self.__dict__.setdefault("_last_incoming", {})
+        chat_id = chat_id or str(getattr(getattr(msg, "channel", None), "id", ""))
+        if at > book.get(chat_id, 0):
+            book[chat_id] = at
+
+    async def order_after_incoming(self, chat_id: str) -> None:
+        """Vector sorts messages by whole-second timestamps. If a reply goes out within the same second as the
+        message that triggered it (or the sender's clock is a bit ahead of ours) it is shown *above* it. Wait until
+        our clock has passed the incoming message's second."""
+        if not getattr(self.client, "reply_ordering", True):
+            return
+        import math
+        import time
+
+        at = self.__dict__.get("_last_incoming", {}).get(chat_id)
+        if at is None:
+            return
+        wait = (math.floor(at) + 1) - time.time()
+        if 0 < wait <= 2.5:
+            await asyncio.sleep(wait + 0.05)
+
     async def parse_message(self, ev: Dict[str, Any]) -> None:
         data = ev["message"]
         if data.get("author"):
@@ -302,6 +329,7 @@ class ConnectionState:
             except Exception:
                 pass
         msg = self._cache_message(self.message_from_incoming(data))
+        self.note_incoming(data.get("chat_id") or ev.get("chat_id", ""), msg)
         self.client.dispatch("message", msg)
 
     async def parse_command(self, ev: Dict[str, Any]) -> None:

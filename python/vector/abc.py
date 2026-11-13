@@ -111,6 +111,7 @@ class Messageable:
         state = self._state
         native = state.native
         channel_id, kind = await self._get_channel_target()
+        await state.order_after_incoming(channel_id)
 
         all_embeds: List["Embed"] = list(embeds or [])
         if embed is not None:

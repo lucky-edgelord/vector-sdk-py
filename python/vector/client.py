@@ -96,8 +96,12 @@ class Client:
         loop: Optional[asyncio.AbstractEventLoop] = None,
         webhook_base_url: Optional[str] = None,
         webhook_db: Optional[str] = None,
+        reply_ordering: bool = True,
         **options: Any,
     ):
+        #: wait (at most ~2s) so a reply is timestamped after the message it answers; Vector sorts by whole
+        #: seconds, so with even slight clock skew a fast reply can otherwise appear *above* the question
+        self.reply_ordering = reply_ordering
         self._webhook_base_url = webhook_base_url
         self._webhook_db = webhook_db
         self._webhook_store_obj: Any = None
