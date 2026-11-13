@@ -318,3 +318,14 @@ VECTOR_NSEC=nsec1… vector-webhooks serve --base-url https://hooks.example.com 
 * `POST /admin/webhooks` (bearer key) to create hooks over HTTP; tokens are stored hashed
 
 Vector has no per-message name or avatar, so `username` becomes a bold first line and `avatar_url` is ignored.
+
+
+## BDScript (Bot Designer for Discord)
+
+Run BDScript 2 and D.js-BDscript bots on Vector: every BDFD function plus Vector-only ones.
+
+```sh
+VECTOR_NSEC=nsec1... vector-bdscript run examples/bdscript
+```
+
+Guide: [docs/bdscript.md](docs/bdscript.md) · Functions: [docs/bdscript-functions.md](docs/bdscript-functions.md)

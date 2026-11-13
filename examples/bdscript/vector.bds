@@ -1,0 +1,10 @@
+---
+name: whoami
+---
+$nomention
+$c[Vector-only functions]
+$title[$displayName]
+$addField[npub;`$authorNpub`]
+$addField[Community;$communityName;yes]
+$addField[Relays;$communityRelays[, ];yes]
+$expireIn[5m]

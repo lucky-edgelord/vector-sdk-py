@@ -1,0 +1,5 @@
+---
+trigger: !ping
+---
+$nomention
+Pong! `$ping ms`

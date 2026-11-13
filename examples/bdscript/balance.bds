@@ -1,0 +1,10 @@
+---
+name: balance
+aliases: bal
+---
+$nomention
+$c[works as !balance [@user] and as /balance]
+$var[who;$if[$message[1;user]==;$authorID;$message[1;user]]]
+$title[Wallet]
+$description[$username[$var[who]] has **$getUserVar[money;$var[who]]** coins]
+$addTimestamp

@@ -6,6 +6,7 @@ build-backend = "maturin"
 vector-run = "vector.compat:main"
 vector-port = "vector.port:main"
 vector-webhooks = "vector.ext.webhooks.cli:main"
+vector-bdscript = "vector.ext.bdscript.__main__:main"
 
 [project]
 name = "vector-sdk-py"

@@ -1,0 +1,7 @@
+---
+name: daily
+---
+$nomention
+$cooldown[24h;You already claimed today. Come back in %time%.]
+$setUserVar[money;$sum[$getUserVar[money];100]]
++100 coins! You now have $getUserVar[money].

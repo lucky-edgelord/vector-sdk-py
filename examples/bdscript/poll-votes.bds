@@ -1,0 +1,8 @@
+---
+trigger: $onInteraction
+---
+$if[$customID==vote_yes]
+$username voted 👍
+$elseif[$customID==vote_no]
+$username voted 👎
+$endif

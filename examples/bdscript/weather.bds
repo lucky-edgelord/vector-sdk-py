@@ -1,0 +1,6 @@
+---
+name: catfact
+---
+$nomention
+$httpGet[https://catfact.ninja/fact]
+🐱 $httpResult[fact]

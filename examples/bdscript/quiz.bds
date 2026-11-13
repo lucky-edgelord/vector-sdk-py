@@ -1,0 +1,6 @@
+---
+name: quiz
+---
+$nomention
+What is 6 × 7? (answer in chat)
+$awaitFunc[quizAnswer]

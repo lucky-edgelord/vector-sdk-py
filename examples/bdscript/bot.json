@@ -1,0 +1,9 @@
+{
+  "prefix": "!",
+  "variables": {"money": 0, "lastDaily": 0},
+  "slash": [
+    {"name": "balance", "description": "Show a balance", "options": [
+      {"name": "user", "type": "USER", "description": "Whose balance", "required": false}
+    ]}
+  ]
+}

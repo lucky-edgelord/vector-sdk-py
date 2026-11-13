@@ -1,0 +1,4 @@
+---
+trigger: $onJoined
+---
+Welcome to **$serverName**, $username! You're member #$membersCount.

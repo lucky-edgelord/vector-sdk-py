@@ -1,0 +1,9 @@
+---
+trigger: $awaitedCommand[quizAnswer]
+---
+$nomention
+$if[$message==42]
+✅ Correct, $username!
+$else
+❌ Nope, it's 42.
+$endif

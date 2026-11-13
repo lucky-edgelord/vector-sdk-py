@@ -1,0 +1,9 @@
+---
+name: poll
+---
+$nomention
+$argsCheck[>1;Usage: !poll <question>]
+$title[📊 $message]
+$description[Vote below]
+$addButton[no;vote_yes;Yes;success;no;👍]
+$addButton[no;vote_no;No;danger;no;👎]
