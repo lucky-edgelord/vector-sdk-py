@@ -31,6 +31,7 @@ awaited forms), slash-style commands (published to Vector's `/` picker).
 | Bot token | `nsec…` secret key | pass it to `bot.run` |
 | Embeds | Rendered as Vector markdown (quote bar, table for fields, always Vector's colours) | nothing; colours you set are ignored |
 | Buttons, selects | Emoji reactions under the message | nothing; a button without an emoji gets 🇦 🇧 🇨 |
+| Custom (server) emoji | emoji from equipped packs: `guild.emojis`, `bot.get_emoji`, `<:name:id>` and `PartialEmoji(name=, id=)` in text, buttons and reactions | `await bot.subscribe_emoji_pack(naddr)` once |
 | Webhooks | `discord.Webhook`, `SyncWebhook`, `channel.create_webhook` work (see [webhooks](webhooks.md)) | nothing |
 | Threads, stages, stickers, polls, Components V2, `FlagConverter` | not in Vector | stubs: the bot starts, using one raises `vector.NotSupportedOnVector` |
 | Presence/status, intents | partly ignored | `change_presence` may fail; intents are accepted |

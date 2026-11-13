@@ -221,6 +221,13 @@ class PartialMessage:
     async def add_reaction(self, emoji: Any, /) -> None:
         cid, kind = await self._target()
         emoji_str, url = _emoji_parts(emoji)
+        emoji_str = normalize_emoji(emoji_str) or emoji_str
+        if url is None and emoji_str.startswith(":") and len(emoji_str) > 2:
+            # a custom emoji named by code: look its image up in the bot's equipped packs
+            found = self._state.client.get_emoji(emoji_str)
+            if found is None:
+                raise ValueError(f"unknown custom emoji {emoji_str}; equip its pack with subscribe_emoji_pack()")
+            url = found.url
         await self._state.native.channel_react(cid, kind, self.id, emoji_str, url)
 
     async def remove_reaction(self, emoji: Any, member: Any = None) -> None:
@@ -304,6 +311,10 @@ def _emoji_parts(emoji: Any):
     """``"👍"`` or ``":custom:"`` (from your packs) or an object with ``.name``/``.url``."""
     if isinstance(emoji, Reaction):
         return emoji.emoji, emoji.emoji_url
+    if isinstance(emoji, dict):
+        return normalize_emoji(emoji), emoji.get("url")
+    if isinstance(emoji, PartialEmoji):
+        return str(emoji), emoji.url
     if hasattr(emoji, "url") and hasattr(emoji, "name") and not isinstance(emoji, str):
         name = emoji.name if str(emoji.name).startswith(":") else f":{emoji.name}:"
         return name, emoji.url
@@ -534,16 +545,67 @@ class RawMemberRemoveEvent(_Raw):
 
 
 class PartialEmoji(str):
-    """A unicode emoji, discord.py-style (``str(emoji)`` is the character). Vector has no custom emoji."""
+    """An emoji, discord.py-style. Either a unicode emoji (``str()`` is the character) or a Vector **custom emoji**
+    from an equipped pack (``str()`` is ``":code:"``, ``url`` is its image).
 
-    def __new__(cls, *, name: str = "", id: Any = None, animated: bool = False):
-        obj = super().__new__(cls, name)
-        obj.name, obj.id, obj.animated = name, id, animated
+    Accepts Discord's forms too, so ported code keeps working: ``"<:wave:123>"`` / ``"<a:wave:123>"`` become
+    ``":wave:"``. Use it, or just the string ``":wave:"``, anywhere an emoji goes: buttons, select options,
+    ``message.add_reaction``.
+    """
+
+    _DISCORD = __import__("re").compile(r"^<a?:(?P<name>[\w~-]+):(?P<id>\d*)>$")
+
+    def __new__(cls, *, name: str = "", id: Any = None, animated: bool = False, url: Optional[str] = None):
+        name = name or ""
+        custom = bool(url) or id is not None or (len(name) > 2 and name.startswith(":") and name.endswith(":"))
+        bare = name.strip(":") if custom else name
+        obj = super().__new__(cls, f":{bare}:" if custom else name)
+        # a pack emoji's id is its code, so ``bot.get_emoji(emoji.id)`` round-trips like on Discord
+        obj.name, obj.id, obj.animated, obj.url = bare, (id if id is not None else (bare if custom else None)), animated, url
+        obj.available, obj.require_colons, obj.managed = True, custom, False
         return obj
 
     @classmethod
     def from_str(cls, value: str) -> "PartialEmoji":
+        value = str(value).strip()
+        m = cls._DISCORD.match(value)
+        if m:
+            return cls(name=m["name"], id=m["id"] or None, animated=value.startswith("<a:"))
         return cls(name=value)
+
+    def is_custom_emoji(self) -> bool:
+        return str(self).startswith(":") and len(self) > 2
+
+    def is_unicode_emoji(self) -> bool:
+        return not self.is_custom_emoji()
+
+    async def read(self) -> bytes:
+        """The emoji image (custom emoji only)."""
+        if not self.url:
+            raise ValueError("unicode emoji have no image")
+        import asyncio
+        import urllib.request
+
+        def get() -> bytes:
+            with urllib.request.urlopen(self.url, timeout=15) as r:
+                return r.read()
+
+        return await asyncio.get_running_loop().run_in_executor(None, get)
+
+    def __repr__(self) -> str:
+        return f"<PartialEmoji name={self.name!r} custom={self.is_custom_emoji()}>"
+
+
+def normalize_emoji(emoji: Any) -> Optional[str]:
+    """Any emoji form -> what Vector reactions use: the unicode character, or ``":code:"`` for a custom emoji."""
+    if emoji is None:
+        return None
+    if isinstance(emoji, dict):
+        code = emoji.get("code") or emoji.get("shortcode") or emoji.get("name") or ""
+        return f":{code.strip(':')}:"
+    if hasattr(emoji, "name") and hasattr(emoji, "url") and not isinstance(emoji, PartialEmoji) and emoji.url:
+        return f":{str(emoji.name).strip(':')}:"
+    return str(PartialEmoji.from_str(str(emoji)))
 
 
 Emoji = PartialEmoji

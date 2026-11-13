@@ -242,14 +242,25 @@ class Client:
         for c in self.communities:
             yield from c.members
 
-    def get_emoji(self, code: str, /) -> Optional[Dict[str, Any]]:
-        code = code.strip(":")
-        return next((e for e in self.emojis if e.get("code", "").strip(":") == code), None)
+    def get_emoji(self, code: Any, /) -> Optional[Any]:
+        """A custom emoji from the bot's equipped packs, by ``"wave"``, ``":wave:"`` or Discord's ``"<:wave:123>"``.
+        Returns a :class:`PartialEmoji` (``str()`` is ``":wave:"``, ``.url`` its image) usable for buttons."""
+        from .message import normalize_emoji
+
+        want = (normalize_emoji(code) or "").strip(":")
+        return next((e for e in self.emojis if e.name == want), None)
 
     @property
-    def emojis(self) -> List[Dict[str, Any]]:
-        """Custom emoji from subscribed packs: ``[{code, url, pack}]``."""
-        return list(self.native.emojis()) if self.native else []
+    def emojis(self) -> List[Any]:
+        """Custom emoji from equipped packs, as :class:`PartialEmoji` (``.name``, ``.url``, ``.pack``)."""
+        from .message import PartialEmoji
+
+        out = []
+        for e in (list(self.native.emojis()) if self.native else []):
+            pe = PartialEmoji(name=str(e.get("code", "")).strip(":"), url=e.get("url"))
+            pe.pack = e.get("pack")
+            out.append(pe)
+        return out
 
     async def fetch_user(self, npub: str, /) -> User:
         user = self._connection.store_user(npub)

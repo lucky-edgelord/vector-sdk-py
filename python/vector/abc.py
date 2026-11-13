@@ -129,7 +129,7 @@ class Messageable:
         def build(part: str) -> str:
             out: List[str] = []
             if part != "footer" and content is not None:
-                out.append(str(content))
+                out.append(_DISCORD_EMOJI.sub(r":\g<name>:", str(content)))  # "<:wave:123>" -> ":wave:"
             for e in all_embeds:
                 md = e.to_markdown(part=part, images=keep_urls)
                 if md:
@@ -313,6 +313,12 @@ class PrivateChannel:
 
     __slots__ = ()
 
+
+
+import re as _re
+
+# Discord's custom-emoji markup in text; Vector writes the same emoji as :code:
+_DISCORD_EMOJI = _re.compile(r"<a?:(?P<name>[\w~-]+):\d*>")
 
 
 async def _fetch_images(embeds: List[Any]) -> List[Any]:

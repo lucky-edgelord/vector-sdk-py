@@ -170,6 +170,18 @@ The embed above is built from a normal `vector.Embed`. A text-only embed looks l
   image. With an image an embed goes out as separate messages (body, image, footer) rather than using an attachment
   caption, which Vector can drop when a chat reloads. `send` returns the last one, which is where a view's reactions go
 
+## Custom emoji
+
+Vector has custom emoji packs. Equip one and use its emoji the way discord.py uses server emoji:
+
+```python
+await bot.subscribe_emoji_pack("naddr1...")          # Vector's own pack, or any pack's share link
+happy = discord.utils.get(guild.emojis, name="happy")  # also bot.get_emoji("happy"), bot.emojis
+await ctx.send(f"hi {happy}")                          # text; "<:happy:123>" is converted too
+@ui.button(label="Yes", emoji=happy)                   # or emoji=":happy:" / "<:happy:123>"
+await message.add_reaction(happy)
+```
+
 ## Views, buttons, selects, modals
 
 ![Buttons shown as reactions under a message](docs/images/reaction-buttons.png)

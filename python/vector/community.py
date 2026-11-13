@@ -332,6 +332,26 @@ class Community:
         return out
 
     @property
+    def emojis(self) -> tuple:
+        """Custom emoji the bot can use here (``discord.Guild.emojis``): every emoji in the bot's equipped packs, so
+        ``discord.utils.get(guild.emojis, name="wave")`` works."""
+        return tuple(self._state.client.emojis)
+
+    def get_emoji(self, emoji_id: Any, /) -> Any:
+        return self._state.client.get_emoji(emoji_id)
+
+    async def fetch_emojis(self) -> List[Any]:
+        return list(self._state.client.emojis)
+
+    async def fetch_emoji(self, emoji_id: Any, /) -> Any:
+        from .errors import NotFound
+
+        e = self._state.client.get_emoji(emoji_id)
+        if e is None:
+            raise NotFound(None, f"unknown emoji {emoji_id}")
+        return e
+
+    @property
     def roles(self) -> List[Role]:
         """Lowest first, ``@everyone`` at index 0 (discord.py order)."""
         return [self.default_role] + sorted(self._roles.values(), key=lambda r: r.position)

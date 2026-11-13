@@ -24,6 +24,13 @@ from typing import TYPE_CHECKING, Any, Callable, ClassVar, Coroutine, Dict, List
 
 from .interaction import Interaction
 
+
+def _norm(emoji: Any) -> Optional[str]:
+    from ..message import normalize_emoji
+
+    return normalize_emoji(emoji)
+
+
 if TYPE_CHECKING:
     from ..message import Message
 
@@ -111,7 +118,7 @@ class Button(Item):
         self.label = label
         self.disabled = disabled
         self.url = url
-        self.emoji: Optional[str] = str(emoji) if emoji is not None else None
+        self.emoji: Optional[str] = _norm(emoji)
         if custom_id:
             self.custom_id = custom_id
         self._row = row
@@ -141,7 +148,7 @@ class SelectOption:
         self.label = label
         self.value = value if value is not None else label
         self.description = description
-        self.emoji: Optional[str] = str(emoji) if emoji is not None else None
+        self.emoji: Optional[str] = _norm(emoji)
         self.default = default
 
     def __repr__(self) -> str:

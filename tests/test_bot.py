@@ -420,3 +420,59 @@ async def test_embed_image_sits_above_footer_and_buttons_on_last(harness_factory
     body, pic, second = h.native.sent[-3], h.native.sent[-2], h.native.sent[-1]
     assert "foot" not in body["text"] and "> body" in body["text"] and pic["file"] == "pic.png" and pic["text"] is None
     assert second["text"].startswith("> -# foot") and msg.id == second["id"]
+
+
+async def test_custom_emoji_buttons(harness_factory):
+    client = vector.Client()
+    h = await harness_factory(client)
+    h.native.emojis = lambda: [{"code": "vector_yes", "url": "https://img/yes.png", "pack": "p"},
+                               {"code": "party", "url": "https://img/party.png", "pack": "p"}]
+    yes = client.get_emoji("<:vector_yes:123>")                         # Discord's form resolves too
+    assert str(yes) == ":vector_yes:" and yes.url == "https://img/yes.png" and yes.is_custom_emoji()
+    assert vector.PartialEmoji.from_str("👍").is_unicode_emoji()
+
+    calls = []
+    orig = h.native.channel_react
+
+    async def react(cid, kind, mid, emoji, url=None):
+        calls.append((emoji, url))
+        return await orig(cid, kind, mid, emoji, url)
+
+    h.native.channel_react = react
+    clicked = []
+
+    class V(ui.View):
+        @ui.button(label="Yes", emoji=yes)
+        async def a(self, i, b): clicked.append("yes")
+
+        @ui.button(label="Party", emoji=":party:")
+        async def p(self, i, b): clicked.append("party")
+
+        @ui.button(label="Old", emoji="<:party:999>")   # unchanged discord.py code
+        async def o(self, i, b): clicked.append("old")
+
+    msg = await client.get_channel(GENERAL).send("pick", view=V())
+    assert (":vector_yes:", "https://img/yes.png") in calls and (":party:", "https://img/party.png") in calls
+    assert "Yes" not in h.native.sent[-1]["text"]                     # no label line: the emoji is the button
+    for e in (":vector_yes:", ":party:"):
+        await h.emit({"type": "reaction_add", "chat_id": GENERAL, "community_id": COMMUNITY,
+                      "message": raw_message("pick", BOT, mid=msg.id, mine=True),
+                      "reaction": {"id": "x" + e, "reference_id": msg.id, "author_id": ALICE, "emoji": e,
+                                   "emoji_url": "https://img/x.png"}, "at": 1})
+    assert clicked == ["yes", "party"]
+    with pytest.raises(ValueError):
+        await msg.add_reaction(":nope:")
+
+
+async def test_custom_emoji_discord_interface(harness_factory):
+    client = vector.Client()
+    h = await harness_factory(client)
+    h.native.emojis = lambda: [{"code": "wave", "url": "https://img/wave.png", "pack": "p"}]
+    guild = client.get_channel(GENERAL).guild
+    wave = vector.utils.get(guild.emojis, name="wave")                 # discord.utils.get(guild.emojis, name=...)
+    assert wave is not None and client.get_emoji(wave.id) is not None and guild.get_emoji("wave").url == wave.url
+    assert (await guild.fetch_emoji("wave")).name == "wave"
+    p = vector.PartialEmoji(name="wave", id=123)                        # discord.PartialEmoji(name=, id=)
+    assert str(p) == ":wave:" and p.is_custom_emoji()
+    await client.get_channel(GENERAL).send("hi <:wave:123> and <a:wave:9>")
+    assert h.native.sent[-1]["text"] == "hi :wave: and :wave:"
