@@ -328,4 +328,13 @@ Run BDScript 2 and D.js-BDscript bots on Vector: every BDFD function plus Vector
 VECTOR_NSEC=nsec1... vector-bdscript run examples/bdscript
 ```
 
+Already have a bot? Attach the engine and call it from Python (details in the guide):
+
+```python
+bd = BDScript(bot)                                   # bot = vector.Client or commands.Bot
+bd.add_command("balance", "You have $getUserVar[money] coins.")
+result = await bd.run("Hi $username!", ctx)          # result.text, result.embeds, result.ok
+text = bd.evaluate("$sum[2;3]")                      # "5", no bot needed
+```
+
 Guide: [docs/bdscript.md](docs/bdscript.md) · Functions: [docs/bdscript-functions.md](docs/bdscript-functions.md)

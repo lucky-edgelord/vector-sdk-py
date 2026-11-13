@@ -267,6 +267,7 @@ async def run(ctx: Context, code: str, *, send: bool = True) -> str:
         nodes = compile_code(code)
     except ParseError as e:
         text = f"❌ Syntax error at {e.line}:{e.col}: {e}"
+        ctx.failure = text
         if send and ctx.channel is not None:
             await ctx.channel.send(text)
         return text
@@ -283,6 +284,7 @@ async def run(ctx: Context, code: str, *, send: bool = True) -> str:
             ctx.response.rows = [[]]
             ctx.response.reactions.clear()
             text = s.message
+            ctx.failure = text or "stopped"
             if not text:
                 ctx.response.suppress = True
     except FunctionError as e:
@@ -295,6 +297,7 @@ async def run(ctx: Context, code: str, *, send: bool = True) -> str:
         else:
             error_text = e.render()
             text = error_text
+            ctx.failure = error_text
             ctx.response.embeds.clear()
             ctx.response.rows = [[]]
             ctx.response.mention_author = False

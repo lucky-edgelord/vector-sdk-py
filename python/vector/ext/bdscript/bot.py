@@ -304,12 +304,13 @@ class BDBot:
                  auto_variables: bool = False, mention_author: bool = True, prefix_variable: Optional[str] = None,
                  allow_http: bool = True, http_limit: int = 5, allow_exec: bool = False, allow_files: bool = False,
                  ai: Optional[Callable[..., Any]] = None, custom_images: Optional[Dict[str, str]] = None,
-                 client: Optional[Client] = None, **client_options: Any) -> None:
+                 client: Optional[Client] = None, listen: bool = True, **client_options: Any) -> None:
         self.prefixes: List[str] = [prefix] if isinstance(prefix, str) else list(prefix)
         self.token = token
         self.owners: List[str] = [str(o) for o in owners]
         if data_dir:
             client_options["data_dir"] = data_dir
+        self._attached = client is not None
         self.client: Client = client or Client(intents=Intents.all(), **client_options)
         self.client.bdbot = self  # type: ignore[attr-defined]
         db = database or os.path.join(data_dir or ".", "bdscript.db")
@@ -339,7 +340,8 @@ class BDBot:
         self._awaits: Dict[tuple, Dict[str, Any]] = {}
         self._reaction_waits: Dict[str, Dict[str, Any]] = {}
         self._tasks: set = set()
-        self._wire()
+        if listen:
+            self._wire()
 
     # -- registration ---------------------------------------------------------------------------------------
     def command(self, data: Optional[Dict[str, Any]] = None, *, _source: str = "", **kwargs: Any) -> Command:
@@ -495,43 +497,52 @@ class BDBot:
     # -- events ---------------------------------------------------------------------------------------------
     def _wire(self) -> None:
         c = self.client
+        attached = self._attached
 
-        @c.event
+        def reg(func: Any) -> Any:
+            # an attached client (e.g. a commands.Bot) keeps its own handlers: ours are extra listeners
+            if attached:
+                c.add_listener(func, func.__name__)
+            else:
+                c.event(func)
+            return func
+
+        @reg
         async def on_ready() -> None:
             self.started_at = time.time()
             self.publish_slash()
             await self._fire("ready", None, channel=None, author=c.user)
 
-        @c.event
+        @reg
         async def on_message(message: Any) -> None:
             await self._on_message(message)
 
-        @c.event
+        @reg
         async def on_member_join(member: Any) -> None:
             await self._fire("join", None, author=member, guild=member.guild)
 
-        @c.event
+        @reg
         async def on_member_remove(member: Any) -> None:
             await self._fire("leave", None, author=member, guild=member.guild)
 
-        @c.event
+        @reg
         async def on_member_ban(guild: Any, user: Any) -> None:
             await self._fire("banAdd", None, author=user, guild=guild)
 
-        @c.event
+        @reg
         async def on_member_unban(guild: Any, user: Any) -> None:
             await self._fire("banRemove", None, author=user, guild=guild)
 
-        @c.event
+        @reg
         async def on_message_delete(message: Any) -> None:
             await self._fire("delete", None, message=message, channel=message.channel, author=message.author,
                              extras={"deleted": True})
 
-        @c.event
+        @reg
         async def on_reaction_add(reaction: Any, user: Any) -> None:
             await self._on_reaction(reaction, user)
 
-        @c.event
+        @reg
         async def on_slash_command(name: str, args: Dict[str, Any], message: Any) -> None:
             opts = {k: str(v) for k, v in (args or {}).items()}
             base = Context(self, message=message)
@@ -546,7 +557,10 @@ class BDBot:
                         self.later(run(ctx, cmd.code))
 
         # a failing handler must never take the bot down
-        @c.event
+        if attached:
+            return
+
+        @reg
         async def on_error(event: str, *a: Any, **k: Any) -> None:
             log.exception("error in %s", event)
 

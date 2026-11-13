@@ -194,3 +194,57 @@ async def test_vector_functions(harness_factory):
     await h.say("!secret")
     await asyncio.sleep(0.05)
     assert h.native.sent[-1].get("expires") or h.native.sent[-1].get("expires_in") or True
+
+
+async def test_attach_to_commands_bot_and_call_from_python(harness_factory):
+    from vector.ext import commands
+    from vector.ext.bdscript import BDScript, BDScriptError
+
+    bot = commands.Bot(command_prefix="!")
+    seen = []
+
+    @bot.listen("on_message")
+    async def mine(message):            # the user's own handler must keep working
+        seen.append(message.content)
+
+    bd = BDScript(bot, database=":memory:")
+    bd.add_command("shout", "$toUpperCase[$message]!", aliases=["yell"])
+    bd.add_command("who", "$nomention$username/$authorID")
+
+    @bot.command()
+    async def hello(ctx):
+        r = await bd.run("Hi $username! $title[T]$description[D]$addButton[no;b1;Go;primary;no]", ctx, send=False)
+        await ctx.send(f"{r.text}|{len(r.embeds)}|{len(r.rows)}|{r.ok}")
+
+    @bd.function("shoutpy", "pyadd")
+    def shoutpy(ctx, *parts):
+        if not parts:
+            raise BDScriptError("nothing to shout")
+        return "".join(parts).upper() + "!"
+
+    h = await harness_factory(bot)
+    await h.say("!shout hello there")
+    await h.say("!yell again")
+    await h.say("!hello")
+    await asyncio.sleep(0.1)
+    assert "HELLO THERE!" in h.texts[-3] and "AGAIN!" in h.texts[-2]
+    assert h.texts[-1].endswith("|1|1|True") and "Hi alice!" in h.texts[-1]
+    assert "!hello" in seen                                   # user's listener untouched
+
+    # pure evaluation: no bot traffic, sync and async
+    assert await bd.evaluate_async("$sum[2;3] $shoutpy[a;b] $pyadd[x]") == "5 AB! X!"
+    r = await bd.run("$shoutpy", channel=bot.get_channel(GENERAL), send=False)
+    assert not r.ok and "nothing to shout" in r.failure
+    r = await bd.run("$var[n;4]$var[n]-$message[1]", args="x y", send=False)
+    assert r.text == "4-x" and r.ok
+    r = await bd.run("$onlyIf[1==2;nope]never", send=False)
+    assert not r.ok and r.text == "nope"
+    await h.stop()
+
+
+def test_standalone_evaluate_without_event_loop():
+    from vector.ext.bdscript import BDScript
+
+    bd = BDScript(database=":memory:", listen=False)
+    assert bd.evaluate("$calculate[6*7] $toTitleCase[a b]") == "42 A B"
+    assert bd.evaluate("$notReal[x]") == "$notReal[x]"
