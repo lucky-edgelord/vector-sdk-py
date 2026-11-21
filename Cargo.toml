@@ -21,7 +21,7 @@ tor = ["vector_sdk/tor"]
 i2p = ["vector_sdk/i2p"]
 
 [dependencies]
-vector_sdk = { version = "0.12.0", default-features = false }
+vector_sdk = { version = "0.14.0", default-features = false }
 pyo3 = { version = "0.27", features = ["extension-module", "abi3-py39"] }
 pyo3-async-runtimes = { version = "0.27", features = ["tokio-runtime"] }
 tokio = { version = "1.49", features = ["rt", "rt-multi-thread", "macros", "sync", "time"] }
